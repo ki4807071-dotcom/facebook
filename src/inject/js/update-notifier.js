@@ -28,11 +28,26 @@
   }
 
   async function openReleasePage() {
+    let invoked = false;
     try {
-      await window.__TAURI__.core.invoke("open_external_url", { url: RELEASES_URL });
+      if (window.__TAURI__?.core?.invoke) {
+        await window.__TAURI__.core.invoke("open_external_url", { url: RELEASES_URL });
+        invoked = true;
+      }
     } catch (error) {
-      console.error("Không thể mở trang tải ứng dụng:", error);
-      showToast("Không thể mở trang tải ứng dụng");
+      console.warn("Không thể mở trang bằng Tauri Opener:", error);
+    }
+
+    if (!invoked) {
+      const link = document.createElement("a");
+      link.href = RELEASES_URL;
+      link.target = "_blank";
+      link.rel = "noopener noreferrer";
+      link.style.display = "none";
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      showToast("Đã mở trang tải trên trình duyệt");
     }
   }
 
