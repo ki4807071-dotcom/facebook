@@ -1,4 +1,4 @@
-# BimBimBamBam
+# <img src="src-tauri/icons/icon.png" alt="Logo BimBimBamBam" width="48" valign="middle"> BimBimBamBam
 
 Ứng dụng desktop Tauri mở Messenger trong webview và bổ sung các tùy chọn giao diện, phím tắt, làm mờ nội dung, cùng chế độ xem ảnh.
 
