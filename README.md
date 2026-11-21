@@ -1,19 +1,32 @@
-# Messa
+# bimbimbambam
 
-Messa là bản thử nghiệm giao diện nhắn tin gọn nhẹ lấy cảm hứng từ các ứng dụng chat trên desktop. Giao diện và biểu tượng được thiết kế riêng; đây không phải ứng dụng chính thức của Meta hay Facebook.
+Giao diện chat đa nền tảng, gọn nhẹ, không framework và hỗ trợ lưu dữ liệu trong trình duyệt.
 
-## Chạy thử
+## Chạy
 
-Mở `index.html` trong trình duyệt hiện đại. Không cần cài đặt hoặc build.
+Mở `index.html` bằng trình duyệt hiện đại, hoặc chạy:
 
-## Có gì trong bản xem trước
+```bash
+python3 -m http.server 4173
+```
 
-- Giao diện thích ứng với màn hình nhỏ và lớn.
-- Danh sách hội thoại mẫu, tìm kiếm, lọc chưa đọc/nhóm và đổi thứ tự.
-- Gửi tin nhắn trong phiên hiện tại (dữ liệu mẫu, chưa kết nối dịch vụ chat).
-- Chế độ sáng/tối, phím tắt `⌘ K` / `Ctrl K`, và hỗ trợ `prefers-reduced-motion`.
-- Không dùng framework hay thư viện JavaScript bên ngoài.
+Sau đó truy cập `http://localhost:4173`.
 
-## Giới hạn
+## Tính năng hiện có
 
-Các hội thoại chỉ là dữ liệu minh họa trong trình duyệt. Đăng nhập Facebook/Messenger, đồng bộ tin nhắn, cuộc gọi, tệp đính kèm và thông báo chưa được tích hợp.
+- Giao diện sáng/tối, responsive desktop và mobile.
+- Tìm kiếm, lọc tất cả/chưa đọc/nhóm, đổi thứ tự.
+- Gửi tin nhắn và đính kèm tên tệp; lưu hội thoại bằng `localStorage`.
+- Phím tắt `Ctrl/Cmd + K`.
+- Hỗ trợ `prefers-reduced-motion`.
+
+## Kết nối dịch vụ thật
+
+Đây là giao diện client. Messenger/Facebook không cho phép nhúng chính thức các tài khoản cá nhân mà không tuân thủ nền tảng Meta và quy trình OAuth. Tích hợp thực tế cần:
+
+1. Meta Developer App và quyền `pages_messaging` hoặc API được cấp phép.
+2. Backend OAuth, xác thực App Secret và Access Token.
+3. Webhook nhận tin nhắn; không lưu token trong JavaScript.
+4. Kết nối WebSocket/WebRTC hoặc dịch vụ chat của bạn để đổi tin nhắn thời gian thực.
+
+Không nên dùng cookie, giả lập đăng nhập hoặc tiện ích can thiệp vào Facebook/Messenger.
