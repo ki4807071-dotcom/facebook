@@ -48,34 +48,8 @@ jobs:
         run: |
           node -e "const c=require('./src-tauri/tauri.conf.json'); const k=c.plugins?.updater?.pubkey; if (!k || k.startsWith('REPLACE_')) { console.error('Set the generated Tauri public key in src-tauri/tauri.conf.json'); process.exit(1); }"
 
-      - name: Build signed NSIS updater
-        if: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY != '' }}
-        run: npm run tauri -- build --bundles nsis
-        env:
-          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
-          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
-
       - name: Build unsigned NSIS installer
-        if: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY == '' }}
         run: npm run tauri -- build --config src-tauri/tauri.ci.conf.json --bundles nsis
-
-      - name: Generate latest.json
-        if: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY != '' }}
-        shell: bash
-        env:
-          RELEASE_NOTES: BimBimBamBam ${{ github.event_name == 'workflow_dispatch' && inputs.release_tag || github.ref_name }}
-        run: |
-          shopt -s nullglob
-          installers=(src-tauri/target/release/bundle/nsis/*-setup.exe)
-          if [[ ${#installers[@]} -ne 1 ]]; then
-            echo "Expected exactly one NSIS setup executable, found ${#installers[@]}" >&2
-            exit 1
-          fi
-
-          node scripts/generate-latest-json.mjs \
-            "$RELEASE_TAG" \
-            "$GITHUB_REPOSITORY" \
-            "windows-x86_64=${installers[0]}"
 
       - name: Publish signed update and manifest
         shell: bash
