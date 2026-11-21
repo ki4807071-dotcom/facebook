@@ -44,5 +44,18 @@ fn main() {
     fs::write(out_dir.join("bimbam_bundle.js"), js_bundle)
         .expect("failed to write JavaScript bundle");
 
-    tauri_build::build();
+    tauri_build::try_build(
+        tauri_build::Attributes::new().app_manifest(
+            tauri_build::AppManifest::new().commands(&[
+                "open_external_url",
+                "get_latest_release",
+                "show_message_notification",
+                "list_tabs",
+                "create_tab",
+                "switch_tab",
+                "close_tab",
+            ]),
+        ),
+    )
+    .expect("failed to run tauri-build");
 }

@@ -1,8 +1,6 @@
 (() => {
   const CACHE_KEY = "bimbimbambam_update_check_v1";
   const CACHE_TTL = 6 * 60 * 60 * 1000;
-  const API_URL =
-    "https://api.github.com/repos/ki4807071-dotcom/facebook/releases/latest";
 
   let banner = null;
   let toast = null;
@@ -86,28 +84,23 @@
     }
 
     try {
-      const controller = new AbortController();
-      const timeout = window.setTimeout(() => controller.abort(), 10000);
-      const response = await fetch(API_URL, {
-        headers: { Accept: "application/vnd.github+json" },
-        cache: "no-store",
-        signal: controller.signal,
-      });
-      window.clearTimeout(timeout);
-      if (!response.ok) throw new Error(`GitHub API ${response.status}`);
-
-      const release = await response.json();
-      localStorage.setItem(
-        CACHE_KEY,
-        JSON.stringify({ checkedAt: Date.now(), release })
-      );
+      const release = await window.__TAURI__.core.invoke("get_latest_release");
+      try {
+        localStorage.setItem(
+          CACHE_KEY,
+          JSON.stringify({ checkedAt: Date.now(), release })
+        );
+      } catch (error) {
+        console.warn("Không thể lưu bộ nhớ đệm kiểm tra cập nhật:", error);
+      }
 
       if (isNewer(release.tag_name, current)) {
         showUpdate(release);
       } else if (force) {
         showToast("Ứng dụng đang là bản mới nhất");
       }
-    } catch {
+    } catch (error) {
+      console.error("Không thể kiểm tra cập nhật:", error);
       if (force) showToast("Không thể kiểm tra cập nhật");
     }
   }

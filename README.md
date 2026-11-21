@@ -23,6 +23,8 @@ npm run build
 
 Trên Linux, lệnh trên tạo gói Debian `.deb` tại `src-tauri/target/release/bundle/deb/`. Bản release bật tối ưu kích thước và strip symbol debug.
 
+Mỗi lần push lên GitHub, workflow Windows sẽ tạo bộ cài `.exe`. Tải file trong mục **Actions**, mở lần chạy tương ứng và tải artifact `BimBimBamBam-windows-...` (artifact được lưu 14 ngày).
+
 Build script gộp `src/inject/css` và `src/inject/js` thành tài nguyên được nhúng vào ứng dụng. Thay đổi các tệp này sẽ được build.rs theo dõi.
 
 ## Tính năng

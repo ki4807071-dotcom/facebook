@@ -10,6 +10,13 @@
     "core:window:allow-minimize",
     "store:default",
     "opener:default",
-    "notification:default"
+    "notification:default",
+    "allow-open-external-url",
+    "allow-get-latest-release",
+    "allow-show-message-notification",
+    "allow-list-tabs",
+    "allow-create-tab",
+    "allow-switch-tab",
+    "allow-close-tab"
   ]
 }

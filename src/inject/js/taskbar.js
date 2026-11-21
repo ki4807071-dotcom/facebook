@@ -1,6 +1,7 @@
 (() => {
   const SOUND_KEY = "bimbimbambam_message_sound_v1";
   const SOUND_CHOICES = ["off", "soft", "bell", "digital"];
+  const INITIAL_MESSAGE_SYNC_MS = 5000;
   let taskbar;
   let audioContext;
 
@@ -128,9 +129,13 @@
   function watchMessages() {
     const main = document.querySelector('[role="main"]');
     if (!main) return;
-    const candidates = '[data-message-id], [role="row"][aria-label]';
+    const candidates = "[data-message-id]";
     const knownMessages = new WeakSet();
+    let notificationsReady = false;
     main.querySelectorAll(candidates).forEach((element) => knownMessages.add(element));
+    window.setTimeout(() => {
+      notificationsReady = true;
+    }, INITIAL_MESSAGE_SYNC_MS);
 
     new MutationObserver((mutations) => {
       const sound = (() => {
@@ -150,6 +155,7 @@
           for (const message of found) {
             if (knownMessages.has(message)) continue;
             knownMessages.add(message);
+            if (!notificationsReady) continue;
             if (isIncomingMessage(message)) {
               if (sound !== "off") playSound(sound);
               notifyMessage(getSenderName(message));

@@ -3,11 +3,19 @@ use tauri::{
     tray::{TrayIconBuilder, TrayIconEvent},
     AppHandle, Emitter, Manager, State, WindowEvent,
 };
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use std::sync::Mutex;
 
 const INJECTED_CSS: &str = include_str!(concat!(env!("OUT_DIR"), "/bimbam_bundle.css"));
 const INJECTED_JS: &str = include_str!(concat!(env!("OUT_DIR"), "/bimbam_bundle.js"));
+const LATEST_RELEASE_URL: &str =
+    "https://api.github.com/repos/ki4807071-dotcom/facebook/releases/latest";
+
+#[derive(Deserialize, Serialize)]
+struct LatestRelease {
+    tag_name: String,
+    html_url: String,
+}
 
 #[derive(Clone, Serialize)]
 struct TabInfo {
@@ -268,6 +276,24 @@ async fn open_external_url(app: tauri::AppHandle, url: String) -> Result<(), Str
 }
 
 #[tauri::command]
+async fn get_latest_release() -> Result<LatestRelease, String> {
+    reqwest::Client::builder()
+        .user_agent(concat!("BimBimBamBam/", env!("CARGO_PKG_VERSION")))
+        .timeout(std::time::Duration::from_secs(10))
+        .build()
+        .map_err(|error| error.to_string())?
+        .get(LATEST_RELEASE_URL)
+        .header(reqwest::header::ACCEPT, "application/vnd.github+json")
+        .send()
+        .await
+        .and_then(reqwest::Response::error_for_status)
+        .map_err(|error| error.to_string())?
+        .json::<LatestRelease>()
+        .await
+        .map_err(|error| error.to_string())
+}
+
+#[tauri::command]
 fn show_message_notification(app: AppHandle, sender: String) -> Result<(), String> {
     use tauri_plugin_notification::NotificationExt;
 
@@ -295,6 +321,7 @@ pub fn run() {
         .plugin(tauri_plugin_notification::init())
         .invoke_handler(tauri::generate_handler![
             open_external_url,
+            get_latest_release,
             show_message_notification,
             list_tabs,
             create_tab,
