@@ -10,6 +10,7 @@
     miniSidebar: false,
     privacy: false,
     autoBlurOnUnfocus: false,
+    sigmaMode: false,
     theme: "default",
     safeMode: false,
   };
@@ -43,6 +44,7 @@
       "bimbam-zen",
       "bimbam-mini-sidebar",
       "bimbam-privacy",
+      "bimbam-sigma",
       "bimbam-theme-oled",
       "bimbam-theme-slate",
     ];
@@ -57,6 +59,7 @@
     if (currentState.zen) html.classList.add("bimbam-zen");
     if (currentState.miniSidebar) html.classList.add("bimbam-mini-sidebar");
     if (currentState.privacy) html.classList.add("bimbam-privacy");
+    if (currentState.sigmaMode) html.classList.add("bimbam-sigma");
     if (currentState.theme === "oled") html.classList.add("bimbam-theme-oled");
     if (currentState.theme === "slate") html.classList.add("bimbam-theme-slate");
   }

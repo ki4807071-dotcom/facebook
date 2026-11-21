@@ -11,6 +11,7 @@
     { key: "zen", label: "Zen Mode (Ctrl/Cmd + Shift + F)" },
     { key: "privacy", label: "Privacy Blur (Ctrl/Cmd + B)" },
     { key: "autoBlurOnUnfocus", label: "Tự làm mờ khi mất focus cửa sổ" },
+    { key: "sigmaMode", label: "Sigma Effects (Ctrl/Cmd + Shift + S)" },
     { key: "safeMode", label: "Safe Mode / Kill-switch (Ctrl/Cmd + Shift + R)" },
   ];
 

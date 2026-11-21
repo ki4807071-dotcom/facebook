@@ -29,8 +29,13 @@ Build script gộp `src/inject/css` và `src/inject/js` thành tài nguyên đư
 
 - Chế độ không animation, giảm hiệu ứng GPU, tối giản và thu gọn thanh bên.
 - Zen mode, làm mờ nội dung riêng tư, và tự làm mờ khi cửa sổ mất focus.
-- Giao diện OLED/Slate, trình xem ảnh, và phím tắt `Ctrl/Cmd + ,`, `K`, `B`, `Shift + F`, `Shift + M`, `Shift + R` và `1–9`.
-- Biểu tượng khay hệ thống; nút đóng cửa sổ sẽ ẩn ứng dụng.
+- Giao diện OLED/Slate, trình xem ảnh, và phím tắt `Ctrl/Cmd + ,`, `K`, `B`, `Shift + F`, `Shift + M`, `Shift + S`, `Shift + R` và `1–9`.
+- Sigma Effects: glow, hiệu ứng glass nhẹ, hover nổi và particle ambient bằng `Ctrl/Cmd + Shift + S`.
+- Thanh tab web để mở và chuyển nhanh nhiều trang; có thể đóng tab riêng mà không mất trạng thái của các trang khác.
+- Chọn âm báo khi nhận tin nhắn (tắt, nhẹ, chuông hoặc âm điện tử) ngay trên thanh tab; hiệu ứng aura xuất hiện khi trang vừa mở.
+- Hiện thông báo hệ thống khi nhận tin nhắn mới: “Ê Sigma, bạn nhận tin nhắn mới từ {tên người gửi}”.
+- Logo ứng dụng hiển thị trong khay hệ thống khi cửa sổ được ẩn; bấm biểu tượng để mở lại.
+- Tự kiểm tra phiên bản mới từ GitHub và hiện banner “Cập nhật ngay”; mục “Kiểm tra cập nhật” trong biểu tượng khay cho phép kiểm tra thủ công.
 - Một số URL có dấu hiệu theo dõi bị chặn trong quá trình điều hướng.
 
 ## Ghi chú

@@ -35,6 +35,12 @@
         return;
       }
 
+      if (event.shiftKey && event.key.toLowerCase() === "s") {
+        event.preventDefault();
+        window.BimBam.toggleFlag("sigmaMode");
+        return;
+      }
+
       if (!event.shiftKey && event.key.toLowerCase() === "b") {
         event.preventDefault();
         window.BimBam.toggleFlag("privacy");

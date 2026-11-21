@@ -1,0 +1,115 @@
+html.bimbam-sigma {
+  --bimbam-sigma-accent: #72a7ff;
+  --bimbam-sigma-accent-soft: rgba(114, 167, 255, 0.18);
+}
+
+html.bimbam-sigma body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 999980;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 12% 18%, rgba(114, 167, 255, 0.08), transparent 20rem),
+    radial-gradient(circle at 88% 82%, rgba(145, 92, 246, 0.06), transparent 24rem);
+  animation: bimbam-sigma-ambient 12s ease-in-out infinite alternate;
+}
+
+html.bimbam-sigma [role="navigation"] [role="listitem"] {
+  position: relative;
+  border-radius: 10px;
+  transition: transform 180ms ease, background 180ms ease, box-shadow 180ms ease;
+}
+
+html.bimbam-sigma [role="navigation"] [role="listitem"]:hover {
+  transform: translateX(3px) scale(1.015);
+  background: var(--bimbam-sigma-accent-soft) !important;
+  box-shadow: inset 2px 0 0 var(--bimbam-sigma-accent);
+}
+
+html.bimbam-sigma [role="main"] [role="row"] {
+  transition: transform 160ms ease, filter 160ms ease;
+}
+
+html.bimbam-sigma [role="main"] [role="row"]:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.04);
+}
+
+html.bimbam-sigma [role="button"],
+html.bimbam-sigma button,
+html.bimbam-sigma [role="link"] {
+  transition: transform 140ms ease, filter 140ms ease, box-shadow 140ms ease;
+}
+
+html.bimbam-sigma [role="button"]:hover,
+html.bimbam-sigma button:hover,
+html.bimbam-sigma [role="link"]:hover {
+  filter: brightness(1.08);
+  box-shadow: 0 0 16px var(--bimbam-sigma-accent-soft);
+}
+
+html.bimbam-sigma [contenteditable="true"][role="textbox"] {
+  box-shadow: 0 0 0 1px var(--bimbam-sigma-accent-soft),
+              0 8px 24px rgba(0, 0, 0, 0.12) !important;
+  transition: box-shadow 180ms ease, background 180ms ease;
+}
+
+html.bimbam-sigma [contenteditable="true"][role="textbox"]:focus {
+  box-shadow: 0 0 0 2px rgba(114, 167, 255, 0.34),
+              0 12px 30px rgba(0, 0, 0, 0.18) !important;
+}
+
+#bimbam-sigma-cursor {
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: 180px;
+  height: 180px;
+  z-index: 999979;
+  pointer-events: none;
+  border-radius: 50%;
+  opacity: 0;
+  transform: translate(-50%, -50%);
+  background: radial-gradient(circle, rgba(114, 167, 255, 0.11), transparent 68%);
+  mix-blend-mode: screen;
+  transition: opacity 220ms ease;
+}
+
+#bimbam-sigma-cursor.active {
+  opacity: 1;
+}
+
+.bimbam-sigma-particle {
+  position: fixed;
+  z-index: 999979;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  pointer-events: none;
+  background: #72a7ff;
+  box-shadow: 0 0 10px rgba(114, 167, 255, 0.8);
+  animation: bimbam-sigma-particle 700ms cubic-bezier(.16, .75, .4, 1) forwards;
+}
+
+@keyframes bimbam-sigma-ambient {
+  from {
+    opacity: 0.55;
+    transform: scale(1);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1.08);
+  }
+}
+
+@keyframes bimbam-sigma-particle {
+  0% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(var(--bimbam-x), var(--bimbam-y)) scale(0);
+  }
+}
