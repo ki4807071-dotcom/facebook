@@ -324,7 +324,10 @@
               const sender = getSenderName(message);
               notifyMessage(sender);
               const state = window.BimBam?.getState?.() || {};
-              if (isMessageSenderAllowed(sender)) {
+              const autoActionsActive =
+                Number(state.autoActionUntil || 0) > Date.now() &&
+                (state.autoReadMessages || state.autoReplyMessages || state.autoReactMessages);
+              if (autoActionsActive && isMessageSenderAllowed(sender)) {
                 if (state.autoReadMessages) {
                   message.scrollIntoView({ behavior: "smooth", block: "nearest" });
                   message.dispatchEvent(new MouseEvent("click", { bubbles: true }));

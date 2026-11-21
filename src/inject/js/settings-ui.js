@@ -100,6 +100,10 @@
               ${["👍","❤️","😂","😮","😢","😠"].map((emoji) => `<option value="${emoji}" ${state.autoReaction === emoji ? "selected" : ""}>${emoji}</option>`).join("")}
             </select>
           </label>
+          <label style="display:flex; align-items:center; justify-content:space-between; gap:12px; padding:10px 0;">
+            <span style="font-size:13px;">Tự động chạy trong (phút)</span>
+            <input id="bimbam-auto-duration" type="number" min="1" max="60" step="1" value="${state.autoActionDurationMinutes}" style="width:92px;background:#20242e;color:#fff;border:1px solid rgba(255,255,255,.15);border-radius:6px;padding:7px;font-size:12px;" />
+          </label>
           <button id="bimbam-check-update" type="button" style="width:100%;min-height:38px;margin-top:6px;border:0;border-radius:9px;background:linear-gradient(135deg,#6C5CE7,#4895EF);color:#fff;font-weight:700;cursor:pointer;">Kiểm tra cập nhật GitHub</button>
           <small style="display:block; padding:8px 0; color:#9ca3af; font-size:11px;">
             Chỉ tối ưu bộ nhớ an toàn của tiến trình app; không đóng app hoặc xóa file.
@@ -151,6 +155,16 @@
 
     modal.querySelector("#bimbam-auto-reaction").onchange = (event) => {
       window.BimBam.setState({ autoReaction: event.target.value });
+    };
+
+    modal.querySelector("#bimbam-auto-duration").onchange = (event) => {
+      const duration = Number(event.target.value);
+      if (!Number.isInteger(duration) || duration < 1 || duration > 60) {
+        event.target.value = state.autoActionDurationMinutes;
+        window.BimBam.showToast?.("Thời gian phải từ 1 đến 60 phút");
+        return;
+      }
+      window.BimBam.setState({ autoActionDurationMinutes: duration });
     };
 
     modal.querySelector("#bimbam-check-update").onclick = () => {
