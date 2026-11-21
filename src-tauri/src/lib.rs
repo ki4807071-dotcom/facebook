@@ -461,11 +461,6 @@ async fn open_external_url(app: tauri::AppHandle, url: String) -> Result<(), Str
 }
 
 #[tauri::command]
-fn quit_app(app: AppHandle) {
-    app.exit(0);
-}
-
-#[tauri::command]
 async fn check_for_update(app: AppHandle) -> Result<Option<UpdateInfo>, String> {
     use tauri_plugin_updater::UpdaterExt;
 
@@ -531,7 +526,6 @@ pub fn run() {
         .plugin(tauri_plugin_updater::Builder::new().build())
         .invoke_handler(tauri::generate_handler![
             open_external_url,
-            quit_app,
             get_memory_trim_settings,
             set_memory_trim_settings,
             check_for_update,

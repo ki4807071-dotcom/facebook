@@ -11,11 +11,21 @@
   let audioContext;
 
   function invoke(command, args) {
-    return window.__TAURI__?.core?.invoke(command, args);
+    if (!window.__TAURI__?.core?.invoke) {
+      return Promise.reject(new Error("Môi trường ứng dụng chưa sẵn sàng"));
+    }
+    return window.__TAURI__.core.invoke(command, args);
   }
 
   function showError(error) {
-    showToast(`Không thể thực hiện thao tác: ${error?.message || error}`);
+    const raw = String(error?.message || error || "");
+    if (/ACL|not allowed|permission|không được phép|forbidden/i.test(raw)) {
+      console.info("Tính năng yêu cầu quyền chưa được cấp:", raw);
+      showToast("Tính năng này chưa được cấp quyền; đã giữ giao diện an toàn.");
+      return;
+    }
+    console.warn("Thao tác UI không thành công:", raw);
+    showToast("Không thể hoàn tất thao tác. Vui lòng thử lại.");
   }
 
   let toast;
@@ -46,8 +56,11 @@
 
   async function openShortcut(shortcut) {
     try {
-      const snapshot = await invoke("list_tabs");
-      const existingTab = snapshot.tabs.find((tab) => tab.title === shortcut.host);
+      const snapshot = await invoke("list_tabs").catch((error) => {
+        showError(error);
+        return null;
+      });
+      const existingTab = snapshot?.tabs?.find((tab) => tab.title === shortcut.host);
       if (existingTab) {
         await invoke("switch_tab", { label: existingTab.label });
         return;
@@ -468,9 +481,16 @@
     });
 
     try {
-      renderTabs(await invoke("list_tabs"));
+      const snapshot = await invoke("list_tabs");
+      renderTabs(snapshot);
     } catch (error) {
-      showError(error);
+      renderTabs({
+        active: "main",
+        tabs: [{ label: "main", title: "Facebook" }],
+      });
+      if (!/ACL|not allowed|permission/i.test(String(error?.message || error))) {
+        showError(error);
+      }
     }
     window.__TAURI__.event?.listen("bimbam:tabs-updated", (event) => {
       renderTabs(event.payload);
