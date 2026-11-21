@@ -1,32 +1,42 @@
-# bimbimbambam
+# BimBimBamBam
 
-Giao diện chat đa nền tảng, gọn nhẹ, không framework và hỗ trợ lưu dữ liệu trong trình duyệt.
+Ứng dụng desktop Tauri mở Messenger trong webview và bổ sung các tùy chọn giao diện, phím tắt, làm mờ nội dung, cùng chế độ xem ảnh.
 
-## Chạy
+## Yêu cầu
 
-Mở `index.html` bằng trình duyệt hiện đại, hoặc chạy:
+- Node.js và npm
+- Rust toolchain
+- Các thư viện hệ thống cần thiết để build Tauri 2 trên nền tảng của bạn
+
+## Cài đặt và chạy
 
 ```bash
-python3 -m http.server 4173
+npm install
+npm run dev
 ```
 
-Sau đó truy cập `http://localhost:4173`.
+Đóng gói ứng dụng:
 
-## Tính năng hiện có
+```bash
+npm run build
+```
 
-- Giao diện sáng/tối, responsive desktop và mobile.
-- Tìm kiếm, lọc tất cả/chưa đọc/nhóm, đổi thứ tự.
-- Gửi tin nhắn và đính kèm tên tệp; lưu hội thoại bằng `localStorage`.
-- Phím tắt `Ctrl/Cmd + K`.
-- Hỗ trợ `prefers-reduced-motion`.
+Build script gộp `src/inject/css` và `src/inject/js` thành tài nguyên được nhúng vào ứng dụng. Thay đổi các tệp này sẽ được build.rs theo dõi.
 
-## Kết nối dịch vụ thật
+## Tính năng
 
-Đây là giao diện client. Messenger/Facebook không cho phép nhúng chính thức các tài khoản cá nhân mà không tuân thủ nền tảng Meta và quy trình OAuth. Tích hợp thực tế cần:
+- Chế độ không animation, giảm hiệu ứng GPU, tối giản và thu gọn thanh bên.
+- Zen mode, làm mờ nội dung riêng tư, và tự làm mờ khi cửa sổ mất focus.
+- Giao diện OLED/Slate, trình xem ảnh, và phím tắt `Ctrl/Cmd + ,`, `K`, `B`, `Shift + F`, `Shift + M`, `Shift + R` và `1–9`.
+- Biểu tượng khay hệ thống; nút đóng cửa sổ sẽ ẩn ứng dụng.
+- Một số URL có dấu hiệu theo dõi bị chặn trong quá trình điều hướng.
 
-1. Meta Developer App và quyền `pages_messaging` hoặc API được cấp phép.
-2. Backend OAuth, xác thực App Secret và Access Token.
-3. Webhook nhận tin nhắn; không lưu token trong JavaScript.
-4. Kết nối WebSocket/WebRTC hoặc dịch vụ chat của bạn để đổi tin nhắn thời gian thực.
+## Ghi chú
 
-Không nên dùng cookie, giả lập đăng nhập hoặc tiện ích can thiệp vào Facebook/Messenger.
+Đây là ứng dụng không chính thức, không dùng Facebook API và không trích xuất cookie hay thông tin đăng nhập. Đăng nhập trực tiếp trong cửa sổ Messenger; khả năng sử dụng phụ thuộc vào chính sách và thay đổi giao diện của Meta. Tùy chọn chặn điều hướng có thể ảnh hưởng đến một số chức năng của Messenger.
+
+Nếu cần thay biểu tượng, tạo một ảnh PNG vuông rồi chạy:
+
+```bash
+npx tauri icon path/to/your-app-icon.png
+```

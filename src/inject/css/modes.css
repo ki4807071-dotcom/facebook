@@ -1,0 +1,33 @@
+html.bimbam-zen [role="navigation"],
+html.bimbam-zen [aria-label*="chat details" i],
+html.bimbam-zen [aria-label*="chi tiết đoạn chat" i],
+html.bimbam-zen [aria-label*="thông tin cuộc trò chuyện" i] {
+  display: none !important;
+}
+
+html.bimbam-zen [role="main"] {
+  width: 100% !important;
+  max-width: 100% !important;
+  flex: 1 1 100% !important;
+}
+
+html.bimbam-mini-sidebar [role="navigation"] {
+  width: 76px !important;
+  min-width: 76px !important;
+  max-width: 76px !important;
+}
+
+html.bimbam-mini-sidebar [role="navigation"] [role="listitem"] span:not(:has(img)):not(:has(svg)) {
+  display: none !important;
+}
+
+html.bimbam-privacy [role="main"] [role="row"] [dir="auto"],
+html.bimbam-privacy [role="navigation"] [role="listitem"] [dir="auto"] {
+  filter: blur(7px) !important;
+  transition: filter 120ms ease !important;
+}
+
+html.bimbam-privacy [role="main"] [role="row"]:hover [dir="auto"],
+html.bimbam-privacy [role="navigation"] [role="listitem"]:hover [dir="auto"] {
+  filter: blur(0) !important;
+}

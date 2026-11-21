@@ -1,0 +1,11 @@
+html.bimbam-theme-oled,
+html.bimbam-theme-oled body,
+html.bimbam-theme-oled [role="main"],
+html.bimbam-theme-oled [role="navigation"] {
+  background-color: #000 !important;
+}
+
+html.bimbam-theme-slate,
+html.bimbam-theme-slate body {
+  background-color: #111318 !important;
+}

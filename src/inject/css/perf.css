@@ -1,0 +1,50 @@
+/* Reduce animation and rendering overhead when the corresponding mode is enabled. */
+html.bimbam-no-anim *,
+html.bimbam-no-anim *::before,
+html.bimbam-no-anim *::after {
+  animation-duration: 0.001ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.001ms !important;
+  transition-delay: 0ms !important;
+  scroll-behavior: auto !important;
+}
+
+html.bimbam-low-gpu * {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+html.bimbam-low-gpu [role="row"],
+html.bimbam-low-gpu [role="listitem"] {
+  box-shadow: none !important;
+}
+
+html.bimbam-contain [role="navigation"] [role="listitem"] {
+  content-visibility: auto;
+  contain: layout style;
+  contain-intrinsic-size: auto 72px;
+}
+
+html.bimbam-contain [role="main"] [role="row"] {
+  content-visibility: auto;
+  contain: layout style;
+  contain-intrinsic-size: auto 64px;
+}
+
+html.bimbam-clean [role="banner"],
+html.bimbam-clean [aria-label*="story" i],
+html.bimbam-clean [aria-label*="stories" i],
+html.bimbam-clean [aria-label*="tin" i][role="region"] {
+  display: none !important;
+}
+
+html.bimbam-clean [role="main"],
+html.bimbam-clean [role="navigation"] {
+  border-radius: 0 !important;
+}
+
+body {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
