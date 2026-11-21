@@ -48,7 +48,11 @@ fn main() {
         tauri_build::Attributes::new().app_manifest(
             tauri_build::AppManifest::new().commands(&[
                 "open_external_url",
-                "get_latest_release",
+                "quit_app",
+                "get_memory_trim_settings",
+                "set_memory_trim_settings",
+                "check_for_update",
+                "install_update",
                 "show_message_notification",
                 "list_tabs",
                 "create_tab",

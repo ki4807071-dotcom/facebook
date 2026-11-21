@@ -2,6 +2,11 @@
   const SOUND_KEY = "bimbimbambam_message_sound_v1";
   const SOUND_CHOICES = ["off", "soft", "bell", "digital"];
   const INITIAL_MESSAGE_SYNC_MS = 5000;
+  const SHORTCUTS = [
+    { label: "TikTok", host: "www.tiktok.com", url: "https://www.tiktok.com/" },
+    { label: "Discord", host: "discord.com", url: "https://discord.com/app" },
+    { label: "Tenor", host: "tenor.com", url: "https://tenor.com/" },
+  ];
   let taskbar;
   let audioContext;
 
@@ -21,6 +26,20 @@
     button.className = className;
     button.addEventListener("click", onClick);
     return button;
+  }
+
+  async function openShortcut(shortcut) {
+    try {
+      const snapshot = await invoke("list_tabs");
+      const existingTab = snapshot.tabs.find((tab) => tab.title === shortcut.host);
+      if (existingTab) {
+        await invoke("switch_tab", { label: existingTab.label });
+        return;
+      }
+      await invoke("create_tab", { url: shortcut.url });
+    } catch (error) {
+      showError(error);
+    }
   }
 
   function renderTabs(snapshot) {
@@ -97,6 +116,47 @@
       } catch {}
       playSound(select.value);
     });
+  }
+
+  async function configureMemoryTrim() {
+    try {
+      let savedSettings = await invoke("get_memory_trim_settings");
+      window.BimBam.setState({
+        autoMemoryTrim: savedSettings.enabled,
+        memoryThresholdMb: savedSettings.thresholdMb,
+      });
+
+      window.addEventListener("bimbam:state-changed", async (event) => {
+        const nextSettings = {
+          enabled: Boolean(event.detail.autoMemoryTrim),
+          thresholdMb: Number(event.detail.memoryThresholdMb),
+        };
+        if (
+          nextSettings.enabled === savedSettings.enabled &&
+          nextSettings.thresholdMb === savedSettings.thresholdMb
+        ) {
+          return;
+        }
+
+        try {
+          await invoke("set_memory_trim_settings", nextSettings);
+          savedSettings = nextSettings;
+        } catch (error) {
+          showError(error);
+          try {
+            savedSettings = await invoke("get_memory_trim_settings");
+            window.BimBam.setState({
+              autoMemoryTrim: savedSettings.enabled,
+              memoryThresholdMb: savedSettings.thresholdMb,
+            });
+          } catch (syncError) {
+            showError(syncError);
+          }
+        }
+      });
+    } catch (error) {
+      showError(error);
+    }
   }
 
   function isIncomingMessage(element) {
@@ -182,8 +242,33 @@
     taskbar = document.createElement("nav");
     taskbar.id = "bimbam-taskbar";
     taskbar.setAttribute("aria-label", "Thanh chuyển trang BimBimBamBam");
+    const islandToggle = createButton(
+      "",
+      "Mở hoặc thu gọn thanh công cụ",
+      () => {
+        const expanded = taskbar.classList.toggle("is-expanded");
+        islandToggle.setAttribute("aria-expanded", String(expanded));
+      },
+      "bimbam-island-toggle"
+    );
+    islandToggle.setAttribute("aria-expanded", "false");
+    islandToggle.innerHTML = `
+      <span class="bimbam-island-mark" aria-hidden="true">B</span>
+      <span class="bimbam-island-name">BimBimBamBam</span>
+      <span class="bimbam-island-chevron" aria-hidden="true">⌄</span>
+    `;
+
+    const content = document.createElement("div");
+    content.className = "bimbam-island-content";
     const tabs = document.createElement("div");
     tabs.id = "bimbam-tabs";
+    const shortcuts = document.createElement("div");
+    shortcuts.className = "bimbam-shortcuts";
+    SHORTCUTS.forEach((shortcut) => {
+      shortcuts.appendChild(
+        createButton(shortcut.label, `Mở ${shortcut.label}`, () => openShortcut(shortcut), "bimbam-shortcut")
+      );
+    });
 
     const addButton = createButton("+", "Thêm trang web", () => {
       const url = window.prompt("Nhập địa chỉ trang web (http hoặc https):", "https://www.facebook.com/");
@@ -208,9 +293,29 @@
       soundSelect.appendChild(option);
     });
     configureSoundSelect(soundSelect);
+    const quitButton = createButton(
+      "⏻",
+      "Thoát ứng dụng",
+      () => invoke("quit_app").catch(showError),
+      "bimbam-toolbar-button bimbam-quit-app"
+    );
 
-    taskbar.append(tabs, addButton, updateButton, soundSelect);
+    const actions = document.createElement("div");
+    actions.className = "bimbam-toolbar-actions";
+    actions.append(addButton, updateButton, soundSelect, quitButton);
+    content.append(tabs, shortcuts, actions);
+    taskbar.append(islandToggle, content);
     document.body.appendChild(taskbar);
+
+    configureMemoryTrim();
+
+    taskbar.addEventListener("keydown", (event) => {
+      if (event.key === "Escape" && taskbar.classList.contains("is-expanded")) {
+        taskbar.classList.remove("is-expanded");
+        islandToggle.setAttribute("aria-expanded", "false");
+        document.activeElement?.blur();
+      }
+    });
 
     try {
       renderTabs(await invoke("list_tabs"));

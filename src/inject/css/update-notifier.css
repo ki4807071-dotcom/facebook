@@ -29,6 +29,15 @@
   font-size: 13px;
 }
 
+.bimbam-update-notes {
+  max-width: min(36vw, 420px);
+  overflow: hidden;
+  color: #cbd5e1;
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 #bimbam-update-download {
   min-height: 32px;
   padding: 0 12px;
@@ -37,6 +46,11 @@
   color: #fff;
   font-size: 12px;
   font-weight: 700;
+}
+
+#bimbam-update-download:disabled {
+  cursor: wait;
+  opacity: 0.7;
 }
 
 #bimbam-update-close {

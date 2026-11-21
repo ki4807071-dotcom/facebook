@@ -12,6 +12,7 @@
     { key: "privacy", label: "Privacy Blur (Ctrl/Cmd + B)" },
     { key: "autoBlurOnUnfocus", label: "Tự làm mờ khi mất focus cửa sổ" },
     { key: "sigmaMode", label: "Sigma Effects (Ctrl/Cmd + Shift + S)" },
+    { key: "autoMemoryTrim", label: "Tự tối ưu RAM của app khi RAM trống thấp" },
     { key: "safeMode", label: "Safe Mode / Kill-switch (Ctrl/Cmd + Shift + R)" },
   ];
 
@@ -46,6 +47,13 @@
 
         <div style="max-height:55vh; overflow-y:auto; padding-right:4px;">
           ${rowsHtml}
+          <label style="display:flex; align-items:center; justify-content:space-between; gap:12px; padding:10px 0; border-bottom:1px solid rgba(255,255,255,0.08);">
+            <span style="font-size:13px;">Ngưỡng RAM trống (MB)</span>
+            <input id="bimbam-memory-threshold" type="number" min="256" max="32768" step="1" style="width:92px; background:#20242e; color:#fff; border:1px solid rgba(255,255,255,0.15); border-radius:6px; padding:4px 8px; font-size:12px;" />
+          </label>
+          <small style="display:block; padding:8px 0; color:#9ca3af; font-size:11px;">
+            Chỉ tối ưu bộ nhớ của tiến trình app; không đóng app khác hoặc xóa file.
+          </small>
         </div>
       </div>
     `;
@@ -54,8 +62,21 @@
       modal.style.display = "none";
     };
 
+    modal.querySelector("#bimbam-memory-threshold").value =
+      String(state.memoryThresholdMb);
+
     modal.querySelector("#bimbam-theme-select").onchange = (event) => {
       window.BimBam.setState({ theme: event.target.value });
+    };
+
+    modal.querySelector("#bimbam-memory-threshold").onchange = (event) => {
+      const thresholdMb = Number(event.target.value);
+      if (!Number.isInteger(thresholdMb) || thresholdMb < 256 || thresholdMb > 32768) {
+        window.alert("Ngưỡng RAM phải từ 256 đến 32768 MB.");
+        event.target.value = state.memoryThresholdMb;
+        return;
+      }
+      window.BimBam.setState({ memoryThresholdMb: thresholdMb });
     };
 
     modal.querySelectorAll('input[type="checkbox"][data-key]').forEach((input) => {

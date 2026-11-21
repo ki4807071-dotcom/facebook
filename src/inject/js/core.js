@@ -13,6 +13,8 @@
     sigmaMode: false,
     theme: "default",
     safeMode: false,
+    autoMemoryTrim: true,
+    memoryThresholdMb: 1024,
   };
 
   window.BimBam = window.BimBam || {};

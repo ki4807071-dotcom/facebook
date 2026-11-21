@@ -4,17 +4,22 @@ use tauri::{
     AppHandle, Emitter, Manager, State, WindowEvent,
 };
 use serde::{Deserialize, Serialize};
-use std::sync::Mutex;
+use std::{
+    fs,
+    path::PathBuf,
+    sync::Mutex,
+    thread,
+    time::Duration,
+};
 
 const INJECTED_CSS: &str = include_str!(concat!(env!("OUT_DIR"), "/bimbam_bundle.css"));
 const INJECTED_JS: &str = include_str!(concat!(env!("OUT_DIR"), "/bimbam_bundle.js"));
-const LATEST_RELEASE_URL: &str =
-    "https://api.github.com/repos/ki4807071-dotcom/facebook/releases/latest";
 
-#[derive(Deserialize, Serialize)]
-struct LatestRelease {
-    tag_name: String,
-    html_url: String,
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct UpdateInfo {
+    version: String,
+    notes: Option<String>,
 }
 
 #[derive(Clone, Serialize)]
@@ -33,6 +38,68 @@ struct TabManager {
     tabs: Mutex<Vec<TabInfo>>,
     active: Mutex<String>,
     next_id: Mutex<u64>,
+}
+
+#[derive(Clone, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct MemoryTrimSettings {
+    enabled: bool,
+    threshold_mb: u64,
+}
+
+impl Default for MemoryTrimSettings {
+    fn default() -> Self {
+        Self {
+            enabled: true,
+            threshold_mb: 1024,
+        }
+    }
+}
+
+impl MemoryTrimSettings {
+    fn validate(&self) -> Result<(), String> {
+        if !(256..=32768).contains(&self.threshold_mb) {
+            return Err("Ngưỡng RAM phải từ 256 đến 32768 MB".into());
+        }
+        Ok(())
+    }
+}
+
+struct MemoryTrimManager {
+    settings: Mutex<MemoryTrimSettings>,
+    settings_path: PathBuf,
+}
+
+impl MemoryTrimManager {
+    fn load(app: &AppHandle) -> Result<Self, String> {
+        let config_dir = app
+            .path()
+            .app_config_dir()
+            .map_err(|error| error.to_string())?;
+        fs::create_dir_all(&config_dir).map_err(|error| error.to_string())?;
+        let settings_path = config_dir.join("memory-trim-settings.json");
+        let settings = match fs::read_to_string(&settings_path) {
+            Ok(contents) => serde_json::from_str::<MemoryTrimSettings>(&contents)
+                .map_err(|error| format!("Không thể đọc cài đặt tối ưu RAM: {error}"))?,
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => {
+                MemoryTrimSettings::default()
+            }
+            Err(error) => return Err(format!("Không thể đọc cài đặt tối ưu RAM: {error}")),
+        };
+        settings.validate()?;
+
+        Ok(Self {
+            settings: Mutex::new(settings),
+            settings_path,
+        })
+    }
+
+    fn save(&self, settings: &MemoryTrimSettings) -> Result<(), String> {
+        let serialized = serde_json::to_vec(settings).map_err(|error| error.to_string())?;
+        let temporary_path = self.settings_path.with_extension("json.tmp");
+        fs::write(&temporary_path, serialized).map_err(|error| error.to_string())?;
+        fs::rename(&temporary_path, &self.settings_path).map_err(|error| error.to_string())
+    }
 }
 
 impl Default for TabManager {
@@ -77,6 +144,124 @@ fn parse_tab_url(value: &str) -> Result<tauri::Url, String> {
 #[tauri::command]
 fn list_tabs(state: State<'_, TabManager>) -> Result<TabsSnapshot, String> {
     tabs_snapshot(&state)
+}
+
+#[tauri::command]
+fn get_memory_trim_settings(
+    state: State<'_, MemoryTrimManager>,
+) -> Result<MemoryTrimSettings, String> {
+    state
+        .settings
+        .lock()
+        .map_err(|error| error.to_string())
+        .map(|settings| settings.clone())
+}
+
+#[tauri::command]
+fn set_memory_trim_settings(
+    state: State<'_, MemoryTrimManager>,
+    enabled: bool,
+    threshold_mb: u64,
+) -> Result<(), String> {
+    let settings = MemoryTrimSettings {
+        enabled,
+        threshold_mb,
+    };
+    settings.validate()?;
+    let mut current = state
+        .settings
+        .lock()
+        .map_err(|error| error.to_string())?;
+    state.save(&settings)?;
+    *current = settings;
+    Ok(())
+}
+
+fn should_trim_memory(settings: &MemoryTrimSettings, available_bytes: u64) -> bool {
+    settings.enabled
+        && available_bytes <= settings.threshold_mb.saturating_mul(1024 * 1024)
+}
+
+fn start_memory_trim_monitor(app: AppHandle) {
+    thread::spawn(move || loop {
+        thread::sleep(Duration::from_secs(60));
+
+        let settings = match app
+            .state::<MemoryTrimManager>()
+            .settings
+            .lock()
+            .map(|settings| settings.clone())
+        {
+            Ok(settings) => settings,
+            Err(error) => {
+                eprintln!("Không thể đọc cài đặt tối ưu RAM: {error}");
+                continue;
+            }
+        };
+        if !settings.enabled {
+            continue;
+        }
+
+        let available_bytes = match available_memory_bytes() {
+            Ok(available_bytes) => available_bytes,
+            Err(error) => {
+                eprintln!("Không thể kiểm tra RAM khả dụng: {error}");
+                continue;
+            }
+        };
+        if should_trim_memory(&settings, available_bytes) {
+            if let Err(error) = trim_current_process_memory() {
+                eprintln!("Không thể tối ưu bộ nhớ của app: {error}");
+            }
+        }
+    });
+}
+
+fn available_memory_bytes() -> Result<u64, String> {
+    let mut system = sysinfo::System::new();
+    system.refresh_memory();
+    Ok(system.available_memory())
+}
+
+#[cfg(target_os = "windows")]
+fn trim_current_process_memory() -> Result<(), String> {
+    use windows_sys::Win32::{
+        Foundation::GetLastError,
+        System::{ProcessStatus::EmptyWorkingSet, Threading::GetCurrentProcess},
+    };
+
+    if unsafe { EmptyWorkingSet(GetCurrentProcess()) } == 0 {
+        return Err(format!("Windows error {}", unsafe { GetLastError() }));
+    }
+    Ok(())
+}
+
+#[cfg(target_os = "linux")]
+fn trim_current_process_memory() -> Result<(), String> {
+    unsafe extern "C" {
+        fn malloc_trim(pad: usize) -> i32;
+    }
+
+    unsafe {
+        malloc_trim(0);
+    }
+    Ok(())
+}
+
+#[cfg(target_os = "macos")]
+fn trim_current_process_memory() -> Result<(), String> {
+    use std::ffi::c_void;
+
+    #[link(name = "System")]
+    unsafe extern "C" {
+        fn malloc_default_zone() -> *mut c_void;
+        fn malloc_zone_pressure_relief(zone: *mut c_void, goal: usize) -> usize;
+    }
+
+    unsafe {
+        malloc_zone_pressure_relief(malloc_default_zone(), 0);
+    }
+    Ok(())
 }
 
 #[tauri::command]
@@ -276,21 +461,45 @@ async fn open_external_url(app: tauri::AppHandle, url: String) -> Result<(), Str
 }
 
 #[tauri::command]
-async fn get_latest_release() -> Result<LatestRelease, String> {
-    reqwest::Client::builder()
-        .user_agent(concat!("BimBimBamBam/", env!("CARGO_PKG_VERSION")))
-        .timeout(std::time::Duration::from_secs(10))
-        .build()
+fn quit_app(app: AppHandle) {
+    app.exit(0);
+}
+
+#[tauri::command]
+async fn check_for_update(app: AppHandle) -> Result<Option<UpdateInfo>, String> {
+    use tauri_plugin_updater::UpdaterExt;
+
+    let update = app
+        .updater()
         .map_err(|error| error.to_string())?
-        .get(LATEST_RELEASE_URL)
-        .header(reqwest::header::ACCEPT, "application/vnd.github+json")
-        .send()
+        .check()
         .await
-        .and_then(reqwest::Response::error_for_status)
+        .map_err(|error| error.to_string())?;
+
+    Ok(update.map(|update| UpdateInfo {
+        version: update.version,
+        notes: update.body,
+    }))
+}
+
+#[tauri::command]
+async fn install_update(app: AppHandle) -> Result<(), String> {
+    use tauri_plugin_updater::UpdaterExt;
+
+    let update = app
+        .updater()
         .map_err(|error| error.to_string())?
-        .json::<LatestRelease>()
+        .check()
         .await
-        .map_err(|error| error.to_string())
+        .map_err(|error| error.to_string())?
+        .ok_or_else(|| "Không tìm thấy bản cập nhật mới".to_string())?;
+
+    update
+        .download_and_install(|_, _| {}, || {})
+        .await
+        .map_err(|error| error.to_string())?;
+
+    app.restart();
 }
 
 #[tauri::command]
@@ -319,9 +528,14 @@ pub fn run() {
         .plugin(tauri_plugin_store::Builder::default().build())
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_notification::init())
+        .plugin(tauri_plugin_updater::Builder::new().build())
         .invoke_handler(tauri::generate_handler![
             open_external_url,
-            get_latest_release,
+            quit_app,
+            get_memory_trim_settings,
+            set_memory_trim_settings,
+            check_for_update,
+            install_update,
             show_message_notification,
             list_tabs,
             create_tab,
@@ -329,6 +543,11 @@ pub fn run() {
             close_tab
         ])
         .setup(move |app| {
+            let memory_trim = MemoryTrimManager::load(app.handle())
+                .map_err(std::io::Error::other)?;
+            app.manage(memory_trim);
+            start_memory_trim_monitor(app.handle().clone());
+
             let show_item =
                 MenuItem::with_id(app, "show", "Hiện BimBimBamBam", true, None::<&str>)?;
             let update_item =
@@ -432,4 +651,50 @@ pub fn run() {
         })
         .run(tauri::generate_context!())
         .expect("error while running BimBimBamBam");
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{should_trim_memory, MemoryTrimSettings};
+
+    #[test]
+    fn trims_when_available_memory_is_at_or_below_threshold() {
+        let settings = MemoryTrimSettings::default();
+        let threshold_bytes = settings.threshold_mb * 1024 * 1024;
+
+        assert!(should_trim_memory(&settings, threshold_bytes));
+        assert!(!should_trim_memory(&settings, threshold_bytes + 1));
+    }
+
+    #[test]
+    fn does_not_trim_when_disabled() {
+        let settings = MemoryTrimSettings {
+            enabled: false,
+            threshold_mb: 1024,
+        };
+
+        assert!(!should_trim_memory(&settings, 0));
+    }
+
+    #[test]
+    fn rejects_thresholds_outside_supported_range() {
+        assert!(MemoryTrimSettings {
+            enabled: true,
+            threshold_mb: 255,
+        }
+        .validate()
+        .is_err());
+        assert!(MemoryTrimSettings {
+            enabled: true,
+            threshold_mb: 256,
+        }
+        .validate()
+        .is_ok());
+        assert!(MemoryTrimSettings {
+            enabled: true,
+            threshold_mb: 32769,
+        }
+        .validate()
+        .is_err());
+    }
 }

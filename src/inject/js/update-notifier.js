@@ -1,26 +1,14 @@
 (() => {
-  const CACHE_KEY = "bimbimbambam_update_check_v1";
+  const CACHE_KEY = "bimbimbambam_signed_update_check_v2";
   const CACHE_TTL = 6 * 60 * 60 * 1000;
+  const RELEASES_URL = "https://github.com/ki4807071-dotcom/facebook/releases/latest";
 
   let banner = null;
   let toast = null;
 
-  function parseVersion(value) {
-    const match = String(value || "").trim().replace(/^v/i, "").match(/^(\d+)\.(\d+)\.(\d+)/);
-    return match ? match.slice(1).map(Number) : null;
-  }
-
-  function isNewer(latest, current) {
-    const next = parseVersion(latest);
-    const installed = parseVersion(current);
-    if (!next || !installed) return false;
-
-    for (let index = 0; index < 3; index += 1) {
-      if (next[index] !== installed[index]) {
-        return next[index] > installed[index];
-      }
-    }
-    return false;
+  function errorDetails(error) {
+    const message = error instanceof Error ? error.message : String(error || "");
+    return message.trim().slice(0, 240) || "Lỗi không xác định";
   }
 
   function showToast(message) {
@@ -38,7 +26,16 @@
     }, 4000);
   }
 
-  function showUpdate(release) {
+  async function openReleasePage() {
+    try {
+      await window.__TAURI__.core.invoke("open_external_url", { url: RELEASES_URL });
+    } catch (error) {
+      console.error("Không thể mở trang tải ứng dụng:", error);
+      showToast("Không thể mở trang tải ứng dụng");
+    }
+  }
+
+  function showUpdateError(error) {
     if (!document.body) return;
     if (!banner) {
       banner = document.createElement("div");
@@ -46,37 +43,80 @@
       document.body.appendChild(banner);
     }
 
-    banner.innerHTML = `
-      <strong>Có bản cập nhật ${release.tag_name}</strong>
-      <button id="bimbam-update-download" type="button">Cập nhật ngay</button>
-      <button id="bimbam-update-close" type="button" title="Đóng">×</button>
-    `;
+    const title = document.createElement("strong");
+    title.textContent = "Không thể cập nhật tự động";
+    const details = document.createElement("span");
+    details.className = "bimbam-update-notes";
+    details.textContent = errorDetails(error);
+    const downloadButton = document.createElement("button");
+    downloadButton.id = "bimbam-update-download";
+    downloadButton.type = "button";
+    downloadButton.textContent = "Mở trang tải";
+    downloadButton.addEventListener("click", openReleasePage);
+    const closeButton = document.createElement("button");
+    closeButton.id = "bimbam-update-close";
+    closeButton.type = "button";
+    closeButton.title = "Đóng";
+    closeButton.textContent = "×";
+    closeButton.addEventListener("click", () => {
+      banner.style.display = "none";
+    });
 
-    banner.querySelector("#bimbam-update-close").onclick = () => {
+    banner.replaceChildren(title, details, downloadButton, closeButton);
+    banner.style.display = "flex";
+  }
+
+  function showUpdate(update) {
+    if (!document.body) return;
+    if (!banner) {
+      banner = document.createElement("div");
+      banner.id = "bimbam-update-banner";
+      document.body.appendChild(banner);
+    }
+
+    const title = document.createElement("strong");
+    title.textContent = `Có bản cập nhật ${update.version}`;
+    const notes = document.createElement("span");
+    notes.className = "bimbam-update-notes";
+    notes.textContent = update.notes || "";
+    const installButton = document.createElement("button");
+    installButton.id = "bimbam-update-download";
+    installButton.type = "button";
+    installButton.textContent = "Tải và cài đặt";
+    const closeButton = document.createElement("button");
+    closeButton.id = "bimbam-update-close";
+    closeButton.type = "button";
+    closeButton.title = "Đóng";
+    closeButton.textContent = "×";
+
+    closeButton.onclick = () => {
       banner.style.display = "none";
     };
-    banner.querySelector("#bimbam-update-download").onclick = async () => {
-      const url = release.html_url;
+    installButton.onclick = async () => {
+      installButton.disabled = true;
+      installButton.textContent = "Đang cài đặt…";
       try {
-        await window.__TAURI__.core.invoke("open_external_url", { url });
-      } catch {
-        window.open(url, "_blank", "noopener,noreferrer");
+        await window.__TAURI__.core.invoke("install_update");
+        showToast("Đã cài đặt bản cập nhật, đang khởi động lại ứng dụng");
+      } catch (error) {
+        console.error("Không thể cài đặt bản cập nhật:", error);
+        showUpdateError(error);
       }
     };
+
+    banner.replaceChildren(title, notes, installButton, closeButton);
     banner.style.display = "flex";
   }
 
   async function checkForUpdate(force = false) {
     if (!document.body) return;
-    const current = window.BimBam?.appVersion;
-    if (!current) return;
 
     if (!force) {
       try {
         const cached = JSON.parse(localStorage.getItem(CACHE_KEY) || "null");
         if (cached && Date.now() - cached.checkedAt < CACHE_TTL) {
-          if (cached.release && isNewer(cached.release.tag_name, current)) {
-            showUpdate(cached.release);
+          if (cached.update) {
+            showUpdate(cached.update);
           }
           return;
         }
@@ -84,24 +124,24 @@
     }
 
     try {
-      const release = await window.__TAURI__.core.invoke("get_latest_release");
+      const update = await window.__TAURI__.core.invoke("check_for_update");
       try {
         localStorage.setItem(
           CACHE_KEY,
-          JSON.stringify({ checkedAt: Date.now(), release })
+          JSON.stringify({ checkedAt: Date.now(), update })
         );
       } catch (error) {
         console.warn("Không thể lưu bộ nhớ đệm kiểm tra cập nhật:", error);
       }
 
-      if (isNewer(release.tag_name, current)) {
-        showUpdate(release);
+      if (update) {
+        showUpdate(update);
       } else if (force) {
         showToast("Ứng dụng đang là bản mới nhất");
       }
     } catch (error) {
       console.error("Không thể kiểm tra cập nhật:", error);
-      if (force) showToast("Không thể kiểm tra cập nhật");
+      if (force) showUpdateError(error);
     }
   }
 
