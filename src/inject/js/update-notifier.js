@@ -121,35 +121,6 @@
 
     if (!force) {
       try {
-        const response = await fetch(RELEASES_API_URL, {
-          headers: { Accept: "application/vnd.github+json" },
-          cache: "no-store",
-        });
-        if (!response.ok) throw new Error(`GitHub API: ${response.status}`);
-        const release = await response.json();
-        const latest = String(release.tag_name || release.name || "").replace(/^v/i, "");
-        const current = String(window.BimBam.appVersion || "0.0.0").replace(/^v/i, "");
-        const parts = (value) => value.split(".").map((part) => Number.parseInt(part, 10) || 0);
-        const latestParts = parts(latest);
-        const currentParts = parts(current);
-        const isNewer = latestParts
-          .map((part, index) => part - (currentParts[index] || 0))
-          .find((difference) => difference !== 0) > 0;
-        const githubUpdate = isNewer ? {
-          version: latest,
-          notes: String(release.body || "").slice(0, 500),
-        } : null;
-        try {
-          localStorage.setItem(CACHE_KEY, JSON.stringify({ checkedAt: Date.now(), update: githubUpdate }));
-        } catch {}
-        if (githubUpdate) showUpdate(githubUpdate);
-        else if (force) showToast("Ứng dụng đang là bản mới nhất");
-        return;
-      } catch (error) {
-        console.warn("Không thể kiểm tra GitHub Releases:", error);
-      }
-
-      try {
         const cached = JSON.parse(localStorage.getItem(CACHE_KEY) || "null");
         if (cached && Date.now() - cached.checkedAt < CACHE_TTL) {
           if (cached.update) {
@@ -161,24 +132,38 @@
     }
 
     try {
-      const update = await window.__TAURI__.core.invoke("check_for_update");
+      const response = await fetch(RELEASES_API_URL, {
+        headers: { Accept: "application/vnd.github+json" },
+        cache: "no-store",
+      });
+      if (!response.ok) throw new Error(`GitHub API: ${response.status}`);
+      const release = await response.json();
+      const latest = String(release.tag_name || release.name || "").replace(/^v/i, "");
+      const current = String(window.BimBam.appVersion || "0.0.0").replace(/^v/i, "");
+      const parts = (value) => value.split(".").map((part) => Number.parseInt(part, 10) || 0);
+      const latestParts = parts(latest);
+      const currentParts = parts(current);
+      const difference = latestParts
+        .map((part, index) => part - (currentParts[index] || 0))
+        .find((value) => value !== 0);
+      const githubUpdate = difference > 0 ? {
+        version: latest,
+        notes: String(release.body || "").slice(0, 500),
+      } : null;
       try {
         localStorage.setItem(
           CACHE_KEY,
-          JSON.stringify({ checkedAt: Date.now(), update })
+          JSON.stringify({ checkedAt: Date.now(), update: githubUpdate })
         );
       } catch (error) {
         console.warn("Không thể lưu bộ nhớ đệm kiểm tra cập nhật:", error);
       }
 
-      if (update) {
-        showUpdate(update);
-      } else if (force) {
-        showToast("Ứng dụng đang là bản mới nhất");
-      }
+      if (githubUpdate) showUpdate(githubUpdate);
+      else if (force) showToast("Ứng dụng đang là bản mới nhất");
     } catch (error) {
       console.error("Không thể kiểm tra cập nhật:", error);
-      if (force) showUpdateError(error);
+      if (force) showToast("Không thể kiểm tra cập nhật lúc này");
     }
   }
 

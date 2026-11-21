@@ -22,8 +22,6 @@
     "allow-open-external-url",
     "allow-get-memory-trim-settings",
     "allow-set-memory-trim-settings",
-    "allow-check-for-update",
-    "allow-install-update",
     "allow-show-message-notification",
     "allow-list-tabs",
     "allow-create-tab",

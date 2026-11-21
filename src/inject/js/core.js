@@ -22,6 +22,12 @@
     autoHideLandscape: true,
     batterySaver: true,
     whitelist: "",
+    autoReadMessages: false,
+    autoReplyMessages: false,
+    autoReactMessages: false,
+    autoMessageWhitelist: "",
+    autoReplyText: "Xin chào! Mình đã nhận được tin nhắn.",
+    autoReaction: "👍",
   };
 
   window.BimBam = window.BimBam || {};

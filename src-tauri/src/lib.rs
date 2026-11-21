@@ -15,14 +15,8 @@ use std::{
 const INJECTED_CSS: &str = include_str!(concat!(env!("OUT_DIR"), "/bimbam_bundle.css"));
 const INJECTED_JS: &str = include_str!(concat!(env!("OUT_DIR"), "/bimbam_bundle.js"));
 
-#[derive(Serialize)]
-#[serde(rename_all = "camelCase")]
-struct UpdateInfo {
-    version: String,
-    notes: Option<String>,
-}
-
 #[derive(Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
 struct TabInfo {
     label: String,
     title: String,
@@ -461,43 +455,6 @@ async fn open_external_url(app: tauri::AppHandle, url: String) -> Result<(), Str
 }
 
 #[tauri::command]
-async fn check_for_update(app: AppHandle) -> Result<Option<UpdateInfo>, String> {
-    use tauri_plugin_updater::UpdaterExt;
-
-    let update = app
-        .updater()
-        .map_err(|error| error.to_string())?
-        .check()
-        .await
-        .map_err(|error| error.to_string())?;
-
-    Ok(update.map(|update| UpdateInfo {
-        version: update.version,
-        notes: update.body,
-    }))
-}
-
-#[tauri::command]
-async fn install_update(app: AppHandle) -> Result<(), String> {
-    use tauri_plugin_updater::UpdaterExt;
-
-    let update = app
-        .updater()
-        .map_err(|error| error.to_string())?
-        .check()
-        .await
-        .map_err(|error| error.to_string())?
-        .ok_or_else(|| "Không tìm thấy bản cập nhật mới".to_string())?;
-
-    update
-        .download_and_install(|_, _| {}, || {})
-        .await
-        .map_err(|error| error.to_string())?;
-
-    app.restart();
-}
-
-#[tauri::command]
 fn show_message_notification(app: AppHandle, sender: String) -> Result<(), String> {
     use tauri_plugin_notification::NotificationExt;
 
@@ -528,8 +485,6 @@ pub fn run() {
             open_external_url,
             get_memory_trim_settings,
             set_memory_trim_settings,
-            check_for_update,
-            install_update,
             show_message_notification,
             list_tabs,
             create_tab,

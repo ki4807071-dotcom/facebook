@@ -215,11 +215,85 @@
     });
   }
 
+  function isMessageSenderAllowed(sender) {
+    const state = window.BimBam?.getState?.() || {};
+    const whitelist = String(state.autoMessageWhitelist || "")
+      .split(",")
+      .map((value) => value.trim().toLowerCase())
+      .filter(Boolean);
+    if (!whitelist.length) return false;
+    const normalized = String(sender || "").trim().toLowerCase();
+    return whitelist.some((name) => normalized.includes(name));
+  }
+
+  function setComposerText(text) {
+    const composer =
+      document.querySelector('[role="main"] [contenteditable="true"][role="textbox"]') ||
+      document.querySelector('[role="main"] [contenteditable="true"]');
+    if (!composer) return false;
+    composer.focus();
+    try {
+      document.execCommand("selectAll", false, null);
+      document.execCommand("insertText", false, text);
+    } catch {
+      composer.textContent = text;
+    }
+    composer.dispatchEvent(new InputEvent("input", { bubbles: true, inputType: "insertText", data: text }));
+    return true;
+  }
+
+  function sendComposerText(text) {
+    if (!setComposerText(text)) return false;
+    window.setTimeout(() => {
+      const sendButton =
+        document.querySelector('[role="main"] [aria-label*="Send" i], [role="main"] [aria-label*="Gửi" i]') ||
+        document.querySelector('[role="main"] button[type="submit"]');
+      if (sendButton instanceof HTMLElement && !sendButton.matches(":disabled")) {
+        sendButton.click();
+      } else {
+        const composer =
+          document.querySelector('[role="main"] [contenteditable="true"][role="textbox"]') ||
+          document.querySelector('[role="main"] [contenteditable="true"]');
+        composer?.dispatchEvent(new KeyboardEvent("keydown", {
+          key: "Enter",
+          code: "Enter",
+          bubbles: true,
+        }));
+      }
+    }, 350);
+    return true;
+  }
+
+  function reactToMessage(message, reaction) {
+    const reactionNames = {
+      "👍": ["Like", "Thích"],
+      "❤️": ["Love", "Yêu thích"],
+      "😂": ["Haha"],
+      "😮": ["Wow"],
+      "😢": ["Sad", "Buồn"],
+      "😠": ["Angry", "Phẫn nộ"],
+    };
+    const labels = reactionNames[reaction] || [];
+    const candidates = [
+      ...message.querySelectorAll("button[aria-label], [role='button'][aria-label]"),
+      ...Array.from(message.parentElement?.querySelectorAll("button[aria-label], [role='button'][aria-label]") || []),
+    ];
+    const match = candidates.find((element) =>
+      labels.some((label) => (element.getAttribute("aria-label") || "").toLowerCase().includes(label.toLowerCase()))
+    );
+    if (match instanceof HTMLElement) {
+      match.click();
+      return true;
+    }
+    return false;
+  }
+
   function watchMessages() {
     const main = document.querySelector('[role="main"]');
     if (!main) return;
     const candidates = "[data-message-id]";
     const knownMessages = new WeakSet();
+    const replyCooldown = new Map();
     let notificationsReady = false;
     main.querySelectorAll(candidates).forEach((element) => knownMessages.add(element));
     window.setTimeout(() => {
@@ -247,7 +321,25 @@
             if (!notificationsReady) continue;
             if (isIncomingMessage(message)) {
               if (sound !== "off") playSound(sound);
-              notifyMessage(getSenderName(message));
+              const sender = getSenderName(message);
+              notifyMessage(sender);
+              const state = window.BimBam?.getState?.() || {};
+              if (isMessageSenderAllowed(sender)) {
+                if (state.autoReadMessages) {
+                  message.scrollIntoView({ behavior: "smooth", block: "nearest" });
+                  message.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+                }
+                if (state.autoReactMessages) {
+                  reactToMessage(message, state.autoReaction || "👍");
+                }
+                if (state.autoReplyMessages) {
+                  const now = Date.now();
+                  if ((replyCooldown.get(sender) || 0) + 60000 < now) {
+                    replyCooldown.set(sender, now);
+                    sendComposerText(String(state.autoReplyText || "").trim());
+                  }
+                }
+              }
               return;
             }
           }

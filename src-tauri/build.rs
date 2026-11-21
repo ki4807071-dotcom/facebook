@@ -50,8 +50,6 @@ fn main() {
                 "open_external_url",
                 "get_memory_trim_settings",
                 "set_memory_trim_settings",
-                "check_for_update",
-                "install_update",
                 "show_message_notification",
                 "list_tabs",
                 "create_tab",

@@ -17,6 +17,9 @@
     { key: "dynamicIsland", label: "Bật Dynamic Island" },
     { key: "autoHideLandscape", label: "Tự ẩn khi xoay ngang" },
     { key: "batterySaver", label: "Tiết kiệm pin dưới 20%" },
+    { key: "autoReadMessages", label: "Tự xem tin nhắn trong whitelist" },
+    { key: "autoReplyMessages", label: "Tự trả lời tin nhắn trong whitelist" },
+    { key: "autoReactMessages", label: "Tự thả cảm xúc trong whitelist" },
   ];
 
   function renderModalContent() {
@@ -83,6 +86,20 @@
             <span style="font-size:13px;">Whitelist</span>
             <textarea id="bimbam-whitelist" rows="2" placeholder="example.com, app.exe" style="width:180px;resize:vertical;background:#20242e;color:#fff;border:1px solid rgba(255,255,255,.15);border-radius:6px;padding:6px;font-size:12px;">${String(state.whitelist || "").replace(/[<&>]/g, "")}</textarea>
           </label>
+          <label style="display:flex; align-items:flex-start; justify-content:space-between; gap:12px; padding:10px 0;">
+            <span style="font-size:13px;">Whitelist tin nhắn</span>
+            <textarea id="bimbam-message-whitelist" rows="2" placeholder="Tên người hoặc trang, phân cách bằng dấu phẩy" style="width:180px;resize:vertical;background:#20242e;color:#fff;border:1px solid rgba(255,255,255,.15);border-radius:6px;padding:6px;font-size:12px;">${String(state.autoMessageWhitelist || "").replace(/[<&>]/g, "")}</textarea>
+          </label>
+          <label style="display:flex; align-items:center; justify-content:space-between; gap:12px; padding:10px 0;">
+            <span style="font-size:13px;">Nội dung tự trả lời</span>
+            <input id="bimbam-auto-reply" type="text" value="${String(state.autoReplyText || "").replace(/["<&]/g, "")}" style="width:180px;background:#20242e;color:#fff;border:1px solid rgba(255,255,255,.15);border-radius:6px;padding:7px;font-size:12px;" />
+          </label>
+          <label style="display:flex; align-items:center; justify-content:space-between; gap:12px; padding:10px 0;">
+            <span style="font-size:13px;">Cảm xúc tự thả</span>
+            <select id="bimbam-auto-reaction" style="width:180px;background:#20242e;color:#fff;border:1px solid rgba(255,255,255,.15);border-radius:6px;padding:7px;font-size:12px;">
+              ${["👍","❤️","😂","😮","😢","😠"].map((emoji) => `<option value="${emoji}" ${state.autoReaction === emoji ? "selected" : ""}>${emoji}</option>`).join("")}
+            </select>
+          </label>
           <button id="bimbam-check-update" type="button" style="width:100%;min-height:38px;margin-top:6px;border:0;border-radius:9px;background:linear-gradient(135deg,#6C5CE7,#4895EF);color:#fff;font-weight:700;cursor:pointer;">Kiểm tra cập nhật GitHub</button>
           <small style="display:block; padding:8px 0; color:#9ca3af; font-size:11px;">
             Chỉ tối ưu bộ nhớ an toàn của tiến trình app; không đóng app hoặc xóa file.
@@ -122,6 +139,18 @@
 
     modal.querySelector("#bimbam-whitelist").onchange = (event) => {
       window.BimBam.setState({ whitelist: event.target.value.trim() });
+    };
+
+    modal.querySelector("#bimbam-message-whitelist").onchange = (event) => {
+      window.BimBam.setState({ autoMessageWhitelist: event.target.value.trim() });
+    };
+
+    modal.querySelector("#bimbam-auto-reply").onchange = (event) => {
+      window.BimBam.setState({ autoReplyText: event.target.value.trim() });
+    };
+
+    modal.querySelector("#bimbam-auto-reaction").onchange = (event) => {
+      window.BimBam.setState({ autoReaction: event.target.value });
     };
 
     modal.querySelector("#bimbam-check-update").onclick = () => {
