@@ -90,18 +90,18 @@ pub fn run() {
             #[cfg(target_os = "macos")]
             let window = window.transparent(true);
 
-            let window = window.build()?;
+            let _window = window.build()?;
 
             #[cfg(target_os = "macos")]
             {
                 use window_vibrancy::{apply_vibrancy, NSVisualEffectMaterial};
-                let _ = apply_vibrancy(&window, NSVisualEffectMaterial::Sidebar, None, None);
+                let _ = apply_vibrancy(&_window, NSVisualEffectMaterial::Sidebar, None, None);
             }
 
             #[cfg(target_os = "windows")]
             {
                 use window_vibrancy::apply_mica;
-                let _ = apply_mica(&window, Some(true));
+                let _ = apply_mica(&_window, Some(true));
             }
 
             Ok(())
