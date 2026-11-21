@@ -2,6 +2,7 @@
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
   "windows": ["main", "tab-*"],
+  "urls": ["http://**", "https://**", "local"],
   "permissions": [
     "core:default",
     "core:window:allow-hide",
