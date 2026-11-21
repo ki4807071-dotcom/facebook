@@ -83,7 +83,7 @@
     const installButton = document.createElement("button");
     installButton.id = "bimbam-update-download";
     installButton.type = "button";
-    installButton.textContent = "Tải và cài đặt";
+    installButton.textContent = "Mở trang tải";
     const closeButton = document.createElement("button");
     closeButton.id = "bimbam-update-close";
     closeButton.type = "button";
@@ -94,15 +94,7 @@
       banner.style.display = "none";
     };
     installButton.onclick = async () => {
-      installButton.disabled = true;
-      installButton.textContent = "Đang cài đặt…";
-      try {
-        await window.__TAURI__.core.invoke("install_update");
-        showToast("Đã cài đặt bản cập nhật, đang khởi động lại ứng dụng");
-      } catch (error) {
-        console.error("Không thể cài đặt bản cập nhật:", error);
-        showUpdateError(error);
-      }
+      await openReleasePage();
     };
 
     banner.replaceChildren(title, notes, installButton, closeButton);

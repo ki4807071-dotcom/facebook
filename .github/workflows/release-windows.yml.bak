@@ -1,0 +1,81 @@
+name: Signed Windows updater release
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: Existing version tag to build and publish (for example v0.1.2)
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  group: updater-release-${{ github.event_name == 'workflow_dispatch' && inputs.release_tag || github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build-and-release:
+    runs-on: windows-latest
+    env:
+      RELEASE_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.release_tag || github.ref_name }}
+      GH_TOKEN: ${{ github.token }}
+
+    steps:
+      - name: Check out release tag
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.release_tag || github.ref }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Setup Rust Toolchain for GitHub CI
+        uses: actions-rust-lang/setup-rust-toolchain@v2.0.1
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Verify updater public key
+        shell: bash
+        run: |
+          node -e "const c=require('./src-tauri/tauri.conf.json'); const k=c.plugins?.updater?.pubkey; if (!k || k.startsWith('REPLACE_')) { console.error('Set the generated Tauri public key in src-tauri/tauri.conf.json'); process.exit(1); }"
+
+      - name: Build unsigned NSIS installer
+        run: npm run tauri -- build --config src-tauri/tauri.ci.conf.json --bundles nsis
+
+      - name: Publish signed update and manifest
+        shell: bash
+        run: |
+          shopt -s nullglob
+          installers=(src-tauri/target/release/bundle/nsis/*-setup.exe)
+          if [[ ${#installers[@]} -ne 1 ]]; then
+            echo "Expected exactly one NSIS setup executable" >&2
+            exit 1
+          fi
+
+          assets=("${installers[0]}")
+          if [[ -f "${installers[0]}.sig" ]]; then
+            assets+=("${installers[0]}.sig")
+          fi
+          if [[ -f latest.json ]]; then
+            assets+=(latest.json)
+          fi
+          if gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release upload "$RELEASE_TAG" "${assets[@]}" \
+              --repo "$GITHUB_REPOSITORY" \
+              --clobber
+          else
+            gh release create "$RELEASE_TAG" "${assets[@]}" \
+              --repo "$GITHUB_REPOSITORY" \
+              --target "$(git rev-parse HEAD)" \
+              --title "BimBimBamBam $RELEASE_TAG" \
+              --generate-notes
+          fi
