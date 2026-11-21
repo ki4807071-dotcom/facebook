@@ -15,6 +15,13 @@
     safeMode: false,
     autoMemoryTrim: true,
     memoryThresholdMb: 1024,
+    dynamicIsland: true,
+    ramThresholdPercent: 80,
+    islandPosition: "top",
+    islandSize: "medium",
+    autoHideLandscape: true,
+    batterySaver: true,
+    whitelist: "",
   };
 
   window.BimBam = window.BimBam || {};

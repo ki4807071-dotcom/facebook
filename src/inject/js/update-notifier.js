@@ -2,6 +2,7 @@
   const CACHE_KEY = "bimbimbambam_signed_update_check_v2";
   const CACHE_TTL = 6 * 60 * 60 * 1000;
   const RELEASES_URL = "https://github.com/ki4807071-dotcom/facebook/releases/latest";
+  const RELEASES_API_URL = "https://api.github.com/repos/ki4807071-dotcom/facebook/releases/latest";
 
   let banner = null;
   let toast = null;
@@ -112,6 +113,35 @@
     if (!document.body) return;
 
     if (!force) {
+      try {
+        const response = await fetch(RELEASES_API_URL, {
+          headers: { Accept: "application/vnd.github+json" },
+          cache: "no-store",
+        });
+        if (!response.ok) throw new Error(`GitHub API: ${response.status}`);
+        const release = await response.json();
+        const latest = String(release.tag_name || release.name || "").replace(/^v/i, "");
+        const current = String(window.BimBam.appVersion || "0.0.0").replace(/^v/i, "");
+        const parts = (value) => value.split(".").map((part) => Number.parseInt(part, 10) || 0);
+        const latestParts = parts(latest);
+        const currentParts = parts(current);
+        const isNewer = latestParts
+          .map((part, index) => part - (currentParts[index] || 0))
+          .find((difference) => difference !== 0) > 0;
+        const githubUpdate = isNewer ? {
+          version: latest,
+          notes: String(release.body || "").slice(0, 500),
+        } : null;
+        try {
+          localStorage.setItem(CACHE_KEY, JSON.stringify({ checkedAt: Date.now(), update: githubUpdate }));
+        } catch {}
+        if (githubUpdate) showUpdate(githubUpdate);
+        else if (force) showToast("Ứng dụng đang là bản mới nhất");
+        return;
+      } catch (error) {
+        console.warn("Không thể kiểm tra GitHub Releases:", error);
+      }
+
       try {
         const cached = JSON.parse(localStorage.getItem(CACHE_KEY) || "null");
         if (cached && Date.now() - cached.checkedAt < CACHE_TTL) {
