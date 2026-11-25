@@ -1,0 +1,29 @@
+{
+  "dry_run": true,
+  "monitor_interval_secs": 5,
+  "memory_warning_gib": 2.0,
+  "games": [
+    {
+      "name": "Example Game",
+      "exe_names": ["examplegame.exe"],
+      "category": "other"
+    }
+  ],
+  "protected_processes": [
+    "steam.exe",
+    "steamwebhelper.exe",
+    "riotclientservices.exe",
+    "riotclientux.exe",
+    "riotclientuxrender.exe",
+    "epicgameslauncher.exe",
+    "epicwebhelper.exe",
+    "vgc.exe",
+    "vgtray.exe",
+    "easyanticheat.exe",
+    "easyanticheat_eos.exe",
+    "start_protected_game.exe",
+    "beservice.exe",
+    "beservice_x64.exe",
+    "battleye.exe"
+  ]
+}

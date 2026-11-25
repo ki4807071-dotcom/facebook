@@ -3,26 +3,105 @@
   top: 10px;
   left: 50%;
   z-index: 999990;
-  display: flex;
-  align-items: center;
-  gap: 5px;
+  width: 230px;
   max-width: calc(100vw - 24px);
   padding: 5px;
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  border-radius: 14px;
-  background: rgba(22, 25, 32, 0.88);
+  overflow: hidden;
+  border: 1px solid rgba(108, 92, 231, 0.62);
+  border-radius: 22px;
+  background: #000;
   color: #f3f4f6;
-  box-shadow: 0 8px 26px rgba(0, 0, 0, 0.24);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
+  box-shadow:
+    0 8px 30px rgba(0, 0, 0, 0.48),
+    0 0 18px rgba(72, 149, 239, 0.16),
+    inset 0 0 0 1px rgba(108, 92, 231, 0.12);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   transform: translateX(-50%);
   font: 13px system-ui, -apple-system, sans-serif;
+  transition:
+    width 320ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    border-radius 320ms ease,
+    box-shadow 320ms ease;
+}
+
+#bimbam-taskbar:hover,
+#bimbam-taskbar:focus-within,
+#bimbam-taskbar.is-expanded {
+  width: min(780px, calc(100vw - 24px));
+  border-radius: 18px;
+  box-shadow: 0 12px 38px rgba(0, 0, 0, 0.4);
+}
+
+#bimbam-island-toggle {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 34px;
+  padding: 0 10px;
+  border-radius: 18px !important;
+  background: transparent !important;
+  font-weight: 650 !important;
+}
+
+.bimbam-island-mark {
+  display: grid;
+  width: 22px;
+  height: 22px;
+  place-items: center;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #5b8cff, #9b64ff);
+  font-size: 12px;
+  box-shadow: 0 0 14px rgba(91, 140, 255, 0.4);
+}
+
+.bimbam-island-name {
+  white-space: nowrap;
+}
+
+.bimbam-island-chevron {
+  color: rgba(255, 255, 255, 0.55);
+  transition: transform 260ms ease;
+}
+
+#bimbam-taskbar:hover .bimbam-island-chevron,
+#bimbam-taskbar:focus-within .bimbam-island-chevron,
+#bimbam-taskbar.is-expanded .bimbam-island-chevron {
+  transform: rotate(180deg);
+}
+
+.bimbam-island-content {
+  display: flex;
+  max-height: 0;
+  align-items: center;
+  gap: 6px;
+  overflow: hidden;
+  opacity: 0;
+  transform: translateY(-5px);
+  transition:
+    max-height 320ms ease,
+    opacity 200ms ease,
+    transform 260ms ease,
+    padding 320ms ease;
+}
+
+#bimbam-taskbar:hover .bimbam-island-content,
+#bimbam-taskbar:focus-within .bimbam-island-content,
+#bimbam-taskbar.is-expanded .bimbam-island-content {
+  max-height: 70px;
+  padding: 3px 1px 1px;
+  opacity: 1;
+  transform: translateY(0);
 }
 
 #bimbam-tabs {
   display: flex;
+  flex: 1 1 auto;
   gap: 4px;
-  max-width: min(58vw, 680px);
+  min-width: 0;
+  max-width: min(34vw, 360px);
   overflow-x: auto;
   scrollbar-width: none;
 }
@@ -85,6 +164,29 @@
   font-size: 17px;
 }
 
+#bimbam-shortcuts,
+.bimbam-toolbar-actions {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 3px;
+}
+
+#bimbam-taskbar .bimbam-shortcut {
+  padding: 0 8px;
+  background: rgba(255, 255, 255, 0.07);
+  font-size: 12px;
+}
+
+#bimbam-taskbar .bimbam-quit-app {
+  background: rgba(239, 68, 68, 0.18);
+  color: #ffb4b4;
+}
+
+#bimbam-taskbar .bimbam-quit-app:hover {
+  background: rgba(239, 68, 68, 0.34);
+}
+
 #bimbam-taskbar .bimbam-add-tab {
   background: rgba(59, 130, 246, 0.24);
   font-size: 21px;
@@ -131,12 +233,38 @@
 @media (max-width: 600px) {
   #bimbam-taskbar {
     top: 6px;
-    gap: 3px;
     padding: 4px;
   }
 
   #bimbam-tabs {
-    max-width: 48vw;
+    max-width: 100%;
+  }
+
+  .bimbam-island-content {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  #bimbam-taskbar:hover .bimbam-island-content,
+  #bimbam-taskbar:focus-within .bimbam-island-content,
+  #bimbam-taskbar.is-expanded .bimbam-island-content {
+    max-height: 130px;
+  }
+
+  #bimbam-shortcuts {
+    order: 1;
+  }
+
+  .bimbam-toolbar-actions {
+    order: 2;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #bimbam-taskbar,
+  .bimbam-island-content,
+  .bimbam-island-chevron {
+    transition: none;
   }
 }
 
@@ -145,4 +273,101 @@
     animation: none;
     display: none;
   }
+}
+
+#bimbam-taskbar[data-position="bottom"] {
+  top: auto;
+  bottom: 10px;
+}
+
+#bimbam-taskbar[data-size="small"] {
+  width: 190px;
+}
+
+#bimbam-taskbar[data-size="large"],
+#bimbam-taskbar[data-size="large"]:hover,
+#bimbam-taskbar[data-size="large"]:focus-within,
+#bimbam-taskbar[data-size="large"].is-expanded {
+  width: min(860px, calc(100vw - 24px));
+}
+
+#bimbam-taskbar.is-disabled {
+  display: none;
+}
+
+#bimbam-taskbar.is-auto-hidden {
+  opacity: 0.12;
+  transform: translateX(-50%) scale(.88);
+  pointer-events: none;
+}
+
+#bimbam-taskbar.is-auto-hidden:active,
+#bimbam-taskbar.is-auto-hidden:focus-within {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+#bimbam-taskbar.is-alert {
+  border-color: rgba(251, 146, 60, 0.95);
+  box-shadow:
+    0 8px 30px rgba(0, 0, 0, 0.48),
+    0 0 22px rgba(239, 68, 68, 0.32);
+}
+
+#bimbam-taskbar.is-battery-saver {
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.48);
+  border-color: rgba(108, 92, 231, 0.35);
+}
+
+#bimbam-taskbar .bimbam-island-mark {
+  background: linear-gradient(135deg, #6C5CE7, #4895EF);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 800;
+  box-shadow: 0 0 16px rgba(72, 149, 239, 0.46);
+}
+
+.bimbam-island-name,
+.bimbam-island-fps,
+.bimbam-island-battery {
+  color: rgba(255, 255, 255, 0.82);
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.bimbam-island-name b {
+  color: #a5b4fc;
+}
+
+.bimbam-island-fps {
+  padding-left: 7px;
+  border-left: 1px solid rgba(255,255,255,.12);
+}
+
+.bimbam-island-battery {
+  margin-left: auto;
+}
+
+#bimbam-island-toast {
+  position: fixed;
+  left: 50%;
+  bottom: 24px;
+  z-index: 999998;
+  max-width: calc(100vw - 32px);
+  padding: 10px 14px;
+  border: 1px solid rgba(108,92,231,.55);
+  border-radius: 12px;
+  background: rgba(0,0,0,.94);
+  color: #fff;
+  font: 13px system-ui, -apple-system, sans-serif;
+  box-shadow: 0 10px 30px rgba(0,0,0,.5);
+  opacity: 0;
+  transform: translate(-50%, 12px);
+  pointer-events: none;
+  transition: opacity 220ms ease, transform 320ms cubic-bezier(.2,.8,.2,1);
+}
+
+#bimbam-island-toast.is-visible {
+  opacity: 1;
+  transform: translate(-50%, 0);
 }

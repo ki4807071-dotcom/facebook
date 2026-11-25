@@ -13,6 +13,24 @@
     sigmaMode: false,
     theme: "default",
     safeMode: false,
+    autoMemoryTrim: true,
+    memoryThresholdMb: 1024,
+    dynamicIsland: true,
+    ramThresholdPercent: 80,
+    islandPosition: "top",
+    islandSize: "medium",
+    autoHideLandscape: true,
+    batterySaver: true,
+    whitelist: "",
+    autoReadMessages: false,
+    autoReplyMessages: false,
+    autoReactMessages: false,
+    autoMessageWhitelist: "",
+    autoReplyText: "Xin chào! Mình đã nhận được tin nhắn.",
+    autoReaction: "👍",
+    autoActionDurationMinutes: 1,
+    autoActionUntil: 0,
+    autoSaveSettings: true,
   };
 
   window.BimBam = window.BimBam || {};
@@ -29,6 +47,9 @@
   function saveState(nextState) {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(nextState));
+      window.dispatchEvent(new CustomEvent("bimbam:settings-saved", {
+        detail: { savedAt: Date.now() },
+      }));
     } catch {}
   }
 
@@ -67,6 +88,18 @@
   window.BimBam.getState = () => ({ ...currentState });
 
   window.BimBam.setState = (patch) => {
+    const enablingAutoAction = Boolean(
+      patch.autoReadMessages === true ||
+      patch.autoReplyMessages === true ||
+      patch.autoReactMessages === true
+    );
+    if (enablingAutoAction) {
+      const duration = Number(patch.autoActionDurationMinutes || currentState.autoActionDurationMinutes || 1);
+      patch = {
+        ...patch,
+        autoActionUntil: Date.now() + Math.max(1, Math.min(60, duration)) * 60 * 1000,
+      };
+    }
     currentState = { ...currentState, ...patch };
     saveState(currentState);
     syncDomClasses();
@@ -99,4 +132,18 @@
     syncDomClasses();
   }
   window.addEventListener("DOMContentLoaded", syncDomClasses, { once: true });
+  window.setInterval(() => {
+    if (
+      currentState.autoActionUntil &&
+      Date.now() >= currentState.autoActionUntil &&
+      (currentState.autoReadMessages || currentState.autoReplyMessages || currentState.autoReactMessages)
+    ) {
+      window.BimBam.setState({
+        autoReadMessages: false,
+        autoReplyMessages: false,
+        autoReactMessages: false,
+        autoActionUntil: 0,
+      });
+    }
+  }, 1000);
 })();

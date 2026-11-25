@@ -12,7 +12,15 @@
     { key: "privacy", label: "Privacy Blur (Ctrl/Cmd + B)" },
     { key: "autoBlurOnUnfocus", label: "Tự làm mờ khi mất focus cửa sổ" },
     { key: "sigmaMode", label: "Sigma Effects (Ctrl/Cmd + Shift + S)" },
+    { key: "autoMemoryTrim", label: "Tự tối ưu RAM của app khi RAM trống thấp" },
     { key: "safeMode", label: "Safe Mode / Kill-switch (Ctrl/Cmd + Shift + R)" },
+    { key: "dynamicIsland", label: "Bật Dynamic Island" },
+    { key: "autoHideLandscape", label: "Tự ẩn khi xoay ngang" },
+    { key: "batterySaver", label: "Tiết kiệm pin dưới 20%" },
+    { key: "autoReadMessages", label: "Tự xem tin nhắn trong whitelist" },
+    { key: "autoReplyMessages", label: "Tự trả lời tin nhắn trong whitelist" },
+    { key: "autoReactMessages", label: "Tự thả cảm xúc trong whitelist" },
+    { key: "autoSaveSettings", label: "Tự động lưu cài đặt" },
   ];
 
   function renderModalContent() {
@@ -30,11 +38,32 @@
 
     modal.innerHTML = `
       <div style="width:420px; max-width:92vw; background:#14161c; color:#f3f4f6; border:1px solid rgba(255,255,255,0.14); border-radius:14px; padding:18px; font-family:system-ui,-apple-system,sans-serif; box-shadow:0 20px 50px rgba(0,0,0,0.55);">
-        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;">
-          <strong style="font-size:15px;">BimBimBamBam — Settings</strong>
+        <div style="position:relative; display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;">
+          <div style="position:absolute; left:50%; top:-2px; transform:translateX(-50%); text-align:center;">
+            <div style="width:54px;height:54px;margin:0 auto 6px;border-radius:16px;background:linear-gradient(135deg,#6C5CE7,#4895EF);display:grid;place-items:center;font-size:28px;font-weight:800;box-shadow:0 8px 24px rgba(108,92,231,.32);">M</div>
+            <strong style="font-size:14px;">BimBimBamBam</strong>
+            <div style="font-size:10px;color:#9ca3af;margin-top:2px;">v${window.BimBam.appVersion || ""}</div>
+          </div>
+          <strong style="font-size:15px;opacity:0;">Settings</strong>
           <button id="bimbam-settings-close" style="background:transparent; border:none; color:#9ca3af; font-size:18px; cursor:pointer;">✕</button>
         </div>
 
+        <div style="height:72px;"></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
+          <label style="font-size:12px;color:#cbd5e1;">Vị trí
+            <select id="bimbam-island-position" style="width:100%;margin-top:5px;background:#20242e;color:#fff;border:1px solid rgba(255,255,255,.15);border-radius:8px;padding:7px;">
+              <option value="top" ${state.islandPosition === "top" ? "selected" : ""}>Trên</option>
+              <option value="bottom" ${state.islandPosition === "bottom" ? "selected" : ""}>Dưới</option>
+            </select>
+          </label>
+          <label style="font-size:12px;color:#cbd5e1;">Kích thước
+            <select id="bimbam-island-size" style="width:100%;margin-top:5px;background:#20242e;color:#fff;border:1px solid rgba(255,255,255,.15);border-radius:8px;padding:7px;">
+              <option value="small" ${state.islandSize === "small" ? "selected" : ""}>Nhỏ</option>
+              <option value="medium" ${state.islandSize === "medium" ? "selected" : ""}>Vừa</option>
+              <option value="large" ${state.islandSize === "large" ? "selected" : ""}>Lớn</option>
+            </select>
+          </label>
+        </div>
         <div style="margin-bottom:12px; display:flex; align-items:center; justify-content:space-between;">
           <span style="font-size:13px;">Theme</span>
           <select id="bimbam-theme-select" style="background:#20242e; color:#fff; border:1px solid rgba(255,255,255,0.15); border-radius:6px; padding:4px 8px; font-size:12px;">
@@ -46,6 +75,45 @@
 
         <div style="max-height:55vh; overflow-y:auto; padding-right:4px;">
           ${rowsHtml}
+          <label style="display:flex; align-items:center; justify-content:space-between; gap:12px; padding:10px 0; border-bottom:1px solid rgba(255,255,255,0.08);">
+            <span style="font-size:13px;">Ngưỡng RAM trống (MB)</span>
+            <input id="bimbam-memory-threshold" type="number" min="256" max="32768" step="1" style="width:92px; background:#20242e; color:#fff; border:1px solid rgba(255,255,255,0.15); border-radius:6px; padding:4px 8px; font-size:12px;" />
+          </label>
+          <label style="display:flex; align-items:center; justify-content:space-between; gap:12px; padding:10px 0; border-bottom:1px solid rgba(255,255,255,0.08);">
+            <span style="font-size:13px;">Ngưỡng Fix Lag (%)</span>
+            <input id="bimbam-ram-percent" type="number" min="50" max="95" step="1" value="${state.ramThresholdPercent}" style="width:92px; background:#20242e; color:#fff; border:1px solid rgba(255,255,255,0.15); border-radius:6px; padding:4px 8px; font-size:12px;" />
+          </label>
+          <label style="display:flex; align-items:flex-start; justify-content:space-between; gap:12px; padding:10px 0;">
+            <span style="font-size:13px;">Whitelist</span>
+            <textarea id="bimbam-whitelist" rows="2" placeholder="example.com, app.exe" style="width:180px;resize:vertical;background:#20242e;color:#fff;border:1px solid rgba(255,255,255,.15);border-radius:6px;padding:6px;font-size:12px;">${String(state.whitelist || "").replace(/[<&>]/g, "")}</textarea>
+          </label>
+          <label style="display:flex; align-items:flex-start; justify-content:space-between; gap:12px; padding:10px 0;">
+            <span style="font-size:13px;">Whitelist tin nhắn</span>
+            <textarea id="bimbam-message-whitelist" rows="2" placeholder="Tên người hoặc trang, phân cách bằng dấu phẩy" style="width:180px;resize:vertical;background:#20242e;color:#fff;border:1px solid rgba(255,255,255,.15);border-radius:6px;padding:6px;font-size:12px;">${String(state.autoMessageWhitelist || "").replace(/[<&>]/g, "")}</textarea>
+          </label>
+          <label style="display:flex; align-items:center; justify-content:space-between; gap:12px; padding:10px 0;">
+            <span style="font-size:13px;">Nội dung tự trả lời</span>
+            <input id="bimbam-auto-reply" type="text" value="${String(state.autoReplyText || "").replace(/["<&]/g, "")}" style="width:180px;background:#20242e;color:#fff;border:1px solid rgba(255,255,255,.15);border-radius:6px;padding:7px;font-size:12px;" />
+          </label>
+          <label style="display:flex; align-items:center; justify-content:space-between; gap:12px; padding:10px 0;">
+            <span style="font-size:13px;">Cảm xúc tự thả</span>
+            <select id="bimbam-auto-reaction" style="width:180px;background:#20242e;color:#fff;border:1px solid rgba(255,255,255,.15);border-radius:6px;padding:7px;font-size:12px;">
+              ${["👍","❤️","😂","😮","😢","😠"].map((emoji) => `<option value="${emoji}" ${state.autoReaction === emoji ? "selected" : ""}>${emoji}</option>`).join("")}
+            </select>
+          </label>
+          <label style="display:flex; align-items:center; justify-content:space-between; gap:12px; padding:10px 0;">
+            <span style="font-size:13px;">Tự động chạy trong (phút)</span>
+            <input id="bimbam-auto-duration" type="number" min="1" max="60" step="1" value="${state.autoActionDurationMinutes}" style="width:92px;background:#20242e;color:#fff;border:1px solid rgba(255,255,255,.15);border-radius:6px;padding:7px;font-size:12px;" />
+          </label>
+          <label style="display:flex; align-items:center; justify-content:space-between; padding:8px 0; border-bottom:1px solid rgba(255,255,255,0.08); cursor:pointer;">
+            <span style="font-size:13px;">Khởi động cùng hệ thống</span>
+            <input id="bimbam-autostart" type="checkbox" style="width:16px; height:16px; cursor:pointer;" />
+          </label>
+          <button id="bimbam-check-update" type="button" style="width:100%;min-height:38px;margin-top:6px;border:0;border-radius:9px;background:linear-gradient(135deg,#6C5CE7,#4895EF);color:#fff;font-weight:700;cursor:pointer;">Kiểm tra cập nhật GitHub</button>
+          <small id="bimbam-settings-save-status" style="display:block; padding:8px 0 0; color:#86efac; font-size:11px;">Đã bật tự lưu cài đặt</small>
+          <small style="display:block; padding:8px 0; color:#9ca3af; font-size:11px;">
+            Chỉ tối ưu bộ nhớ an toàn của tiến trình app; không đóng app hoặc xóa file.
+          </small>
         </div>
       </div>
     `;
@@ -54,8 +122,99 @@
       modal.style.display = "none";
     };
 
+    const autostartToggle = modal.querySelector("#bimbam-autostart");
+    const invoke = window.__TAURI__?.core?.invoke;
+    if (invoke) {
+      invoke("get_autostart_enabled")
+        .then((enabled) => {
+          autostartToggle.checked = enabled;
+        })
+        .catch((error) => {
+          autostartToggle.disabled = true;
+          console.error("Could not read autostart setting:", error);
+          window.BimBam.showToast?.("Không thể đọc tùy chọn khởi động cùng hệ thống.");
+        });
+
+      autostartToggle.onchange = async () => {
+        const enabled = autostartToggle.checked;
+        autostartToggle.disabled = true;
+        try {
+          await invoke("set_autostart_enabled", { enabled });
+        } catch (error) {
+          autostartToggle.checked = !enabled;
+          console.error("Could not update autostart setting:", error);
+          window.BimBam.showToast?.("Không thể cập nhật tùy chọn khởi động cùng hệ thống.");
+        } finally {
+          autostartToggle.disabled = false;
+        }
+      };
+    } else {
+      autostartToggle.disabled = true;
+    }
+
+    modal.querySelector("#bimbam-memory-threshold").value =
+      String(state.memoryThresholdMb);
+
     modal.querySelector("#bimbam-theme-select").onchange = (event) => {
       window.BimBam.setState({ theme: event.target.value });
+    };
+
+    modal.querySelector("#bimbam-island-position").onchange = (event) => {
+      window.BimBam.setState({ islandPosition: event.target.value });
+    };
+
+    modal.querySelector("#bimbam-island-size").onchange = (event) => {
+      window.BimBam.setState({ islandSize: event.target.value });
+    };
+
+    modal.querySelector("#bimbam-ram-percent").onchange = (event) => {
+      const ramThresholdPercent = Number(event.target.value);
+      if (!Number.isInteger(ramThresholdPercent) || ramThresholdPercent < 50 || ramThresholdPercent > 95) {
+        event.target.value = state.ramThresholdPercent;
+        window.BimBam.showToast?.("Ngưỡng Fix Lag phải từ 50 đến 95%");
+        return;
+      }
+      window.BimBam.setState({ ramThresholdPercent });
+    };
+
+    modal.querySelector("#bimbam-whitelist").onchange = (event) => {
+      window.BimBam.setState({ whitelist: event.target.value.trim() });
+    };
+
+    modal.querySelector("#bimbam-message-whitelist").onchange = (event) => {
+      window.BimBam.setState({ autoMessageWhitelist: event.target.value.trim() });
+    };
+
+    modal.querySelector("#bimbam-auto-reply").onchange = (event) => {
+      window.BimBam.setState({ autoReplyText: event.target.value.trim() });
+    };
+
+    modal.querySelector("#bimbam-auto-reaction").onchange = (event) => {
+      window.BimBam.setState({ autoReaction: event.target.value });
+    };
+
+    modal.querySelector("#bimbam-auto-duration").onchange = (event) => {
+      const duration = Number(event.target.value);
+      if (!Number.isInteger(duration) || duration < 1 || duration > 60) {
+        event.target.value = state.autoActionDurationMinutes;
+        window.BimBam.showToast?.("Thời gian phải từ 1 đến 60 phút");
+        return;
+      }
+      window.BimBam.setState({ autoActionDurationMinutes: duration });
+    };
+
+    modal.querySelector("#bimbam-check-update").onclick = () => {
+      window.BimBam.checkForUpdate?.(true);
+    };
+
+    modal.querySelector("#bimbam-memory-threshold").onchange = (event) => {
+      const thresholdMb = Number(event.target.value);
+      if (!Number.isInteger(thresholdMb) || thresholdMb < 256 || thresholdMb > 32768) {
+        event.target.value = state.memoryThresholdMb;
+        window.BimBam.showToast?.("Ngưỡng RAM phải từ 256 đến 32768 MB.");
+        return;
+      }
+      window.BimBam.setState({ memoryThresholdMb: thresholdMb });
     };
 
     modal.querySelectorAll('input[type="checkbox"][data-key]').forEach((input) => {
@@ -117,5 +276,15 @@
     if (modal && modal.style.display === "flex") {
       renderModalContent();
     }
+  });
+  window.addEventListener("bimbam:settings-saved", (event) => {
+    if (!modal || modal.style.display !== "flex") return;
+    const status = modal.querySelector("#bimbam-settings-save-status");
+    if (!status) return;
+    const time = new Date(event.detail?.savedAt || Date.now()).toLocaleTimeString("vi-VN", {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+    status.textContent = `Đã tự lưu lúc ${time}`;
   });
 })();
