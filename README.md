@@ -21,6 +21,54 @@ npm run dev
 npm run build
 ```
 
+## Dùng làm ứng dụng chat độc lập
+
+Ứng dụng mở Messenger mặc định. Có thể chọn một trang chat khác bằng biến môi trường
+`BIMBAM_CHAT_URL` (chỉ chấp nhận URL HTTP/HTTPS có hostname), ví dụ:
+
+```bash
+BIMBAM_CHAT_URL=https://web.whatsapp.com npm run dev
+```
+
+Tệp `themes/custom.css` là theme mẫu và được đóng gói cùng ứng dụng. Để dùng CSS riêng,
+đặt đường dẫn tuyệt đối trong `BIMBAM_THEME_CSS`; tệp theme được giới hạn tối đa 256 KiB
+và được nạp khi khởi chạy:
+
+```bash
+BIMBAM_THEME_CSS="$HOME/.config/bimbimbambam/custom.css" npm run dev
+```
+
+Các link HTTP(S) khác origin được mở bằng trình duyệt mặc định. Mục **Khởi động cùng hệ
+thống** trong cài đặt bật/tắt autostart; cửa sổ chính tự ẩn xuống khay khi đóng và trạng
+thái/kích thước được lưu bởi plugin window-state. Dùng `BIMBAM_CHAT_URL` để thay đổi trang
+đích; nếu trang đó cần thêm các hostname phụ, hãy cập nhật capability URL phù hợp trong
+`src-tauri/capabilities/default.json`.
+
+Build theo nền tảng (cần cài các thư viện phát triển Tauri của hệ điều hành đích):
+
+```bash
+# Windows: installer NSIS .exe
+npm run tauri -- build --bundles nsis
+
+# macOS: .dmg
+npm run tauri -- build --bundles dmg
+
+# Linux: AppImage portable hoặc gói .deb
+npm run tauri -- build --bundles appimage
+npm run tauri -- build --bundles deb
+```
+
+Tạo executable Windows không đóng gói installer:
+
+```bash
+cargo build --release --manifest-path src-tauri/Cargo.toml
+```
+
+Binary nằm tại `src-tauri/target/release/bimbimbambam.exe`. Windows cần WebView2 Runtime
+(thường đã có sẵn trên Windows 10/11); app dùng profile WebView và thư mục cấu hình của
+tài khoản hiện tại, nên executable portable không đồng nghĩa với dữ liệu/profile portable.
+Trên macOS, dùng `.dmg`; trên Linux, AppImage là lựa chọn chạy không cần cài gói hệ thống.
+
 Vì cấu hình updater bật tạo artifact có chữ ký, build production cần `TAURI_SIGNING_PRIVATE_KEY` và `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`. Trên Linux, lệnh trên tạo gói Debian `.deb` tại `src-tauri/target/release/bundle/deb/`. Bản release bật tối ưu kích thước và strip symbol debug. Để build gói thường không ký, dùng overlay CI:
 
 ```bash
@@ -173,6 +221,8 @@ Workflow build installer cho branch dùng `src-tauri/tauri.ci.conf.json` để t
 - Logo ứng dụng hiển thị trong khay hệ thống khi cửa sổ được ẩn; bấm biểu tượng để mở lại.
 - Tự kiểm tra phiên bản mới từ GitHub và hiện banner “Cập nhật ngay”; mục “Kiểm tra cập nhật” trong biểu tượng khay cho phép kiểm tra thủ công.
 - Một số URL có dấu hiệu theo dõi bị chặn trong quá trình điều hướng.
+- Single-instance đưa cửa sổ đang chạy lên trước; có thể bật autostart trong cài đặt.
+- Theme CSS ngoài được nạp lúc khởi động; không có telemetry hoặc máy chủ trung gian.
 
 ## Ghi chú
 

@@ -20,6 +20,7 @@
     { key: "autoReadMessages", label: "Tự xem tin nhắn trong whitelist" },
     { key: "autoReplyMessages", label: "Tự trả lời tin nhắn trong whitelist" },
     { key: "autoReactMessages", label: "Tự thả cảm xúc trong whitelist" },
+    { key: "autoSaveSettings", label: "Tự động lưu cài đặt" },
   ];
 
   function renderModalContent() {
@@ -104,7 +105,12 @@
             <span style="font-size:13px;">Tự động chạy trong (phút)</span>
             <input id="bimbam-auto-duration" type="number" min="1" max="60" step="1" value="${state.autoActionDurationMinutes}" style="width:92px;background:#20242e;color:#fff;border:1px solid rgba(255,255,255,.15);border-radius:6px;padding:7px;font-size:12px;" />
           </label>
+          <label style="display:flex; align-items:center; justify-content:space-between; padding:8px 0; border-bottom:1px solid rgba(255,255,255,0.08); cursor:pointer;">
+            <span style="font-size:13px;">Khởi động cùng hệ thống</span>
+            <input id="bimbam-autostart" type="checkbox" style="width:16px; height:16px; cursor:pointer;" />
+          </label>
           <button id="bimbam-check-update" type="button" style="width:100%;min-height:38px;margin-top:6px;border:0;border-radius:9px;background:linear-gradient(135deg,#6C5CE7,#4895EF);color:#fff;font-weight:700;cursor:pointer;">Kiểm tra cập nhật GitHub</button>
+          <small id="bimbam-settings-save-status" style="display:block; padding:8px 0 0; color:#86efac; font-size:11px;">Đã bật tự lưu cài đặt</small>
           <small style="display:block; padding:8px 0; color:#9ca3af; font-size:11px;">
             Chỉ tối ưu bộ nhớ an toàn của tiến trình app; không đóng app hoặc xóa file.
           </small>
@@ -115,6 +121,36 @@
     modal.querySelector("#bimbam-settings-close").onclick = () => {
       modal.style.display = "none";
     };
+
+    const autostartToggle = modal.querySelector("#bimbam-autostart");
+    const invoke = window.__TAURI__?.core?.invoke;
+    if (invoke) {
+      invoke("get_autostart_enabled")
+        .then((enabled) => {
+          autostartToggle.checked = enabled;
+        })
+        .catch((error) => {
+          autostartToggle.disabled = true;
+          console.error("Could not read autostart setting:", error);
+          window.BimBam.showToast?.("Không thể đọc tùy chọn khởi động cùng hệ thống.");
+        });
+
+      autostartToggle.onchange = async () => {
+        const enabled = autostartToggle.checked;
+        autostartToggle.disabled = true;
+        try {
+          await invoke("set_autostart_enabled", { enabled });
+        } catch (error) {
+          autostartToggle.checked = !enabled;
+          console.error("Could not update autostart setting:", error);
+          window.BimBam.showToast?.("Không thể cập nhật tùy chọn khởi động cùng hệ thống.");
+        } finally {
+          autostartToggle.disabled = false;
+        }
+      };
+    } else {
+      autostartToggle.disabled = true;
+    }
 
     modal.querySelector("#bimbam-memory-threshold").value =
       String(state.memoryThresholdMb);
@@ -240,5 +276,15 @@
     if (modal && modal.style.display === "flex") {
       renderModalContent();
     }
+  });
+  window.addEventListener("bimbam:settings-saved", (event) => {
+    if (!modal || modal.style.display !== "flex") return;
+    const status = modal.querySelector("#bimbam-settings-save-status");
+    if (!status) return;
+    const time = new Date(event.detail?.savedAt || Date.now()).toLocaleTimeString("vi-VN", {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+    status.textContent = `Đã tự lưu lúc ${time}`;
   });
 })();

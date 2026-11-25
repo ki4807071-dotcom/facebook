@@ -3,7 +3,6 @@
   "identifier": "default",
   "windows": ["main", "tab-*"],
   "urls": [
-    "http://**",
     "https://**",
     "tauri://localhost",
     "asset://localhost",
@@ -19,7 +18,10 @@
     "store:default",
     "opener:default",
     "notification:default",
+    "window-state:default",
     "allow-open-external-url",
+    "allow-get-autostart-enabled",
+    "allow-set-autostart-enabled",
     "allow-get-memory-trim-settings",
     "allow-set-memory-trim-settings",
     "allow-show-message-notification",

@@ -48,6 +48,8 @@ fn main() {
         tauri_build::Attributes::new().app_manifest(
             tauri_build::AppManifest::new().commands(&[
                 "open_external_url",
+                "get_autostart_enabled",
+                "set_autostart_enabled",
                 "get_memory_trim_settings",
                 "set_memory_trim_settings",
                 "show_message_notification",

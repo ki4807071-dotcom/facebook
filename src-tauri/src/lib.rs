@@ -34,6 +34,8 @@ struct TabManager {
     next_id: Mutex<u64>,
 }
 
+struct ThemeStyles(String);
+
 #[derive(Clone, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 struct MemoryTrimSettings {
@@ -259,7 +261,12 @@ fn trim_current_process_memory() -> Result<(), String> {
 }
 
 #[tauri::command]
-fn create_tab(app: AppHandle, state: State<'_, TabManager>, url: String) -> Result<String, String> {
+fn create_tab(
+    app: AppHandle,
+    state: State<'_, TabManager>,
+    theme: State<'_, ThemeStyles>,
+    url: String,
+) -> Result<String, String> {
     let parsed_url = parse_tab_url(&url)?;
     let title = parsed_url.host_str().unwrap_or("Trang mới").to_string();
     let label = {
@@ -298,7 +305,7 @@ fn create_tab(app: AppHandle, state: State<'_, TabManager>, url: String) -> Resu
     .position(position.x as f64 / scale, position.y as f64 / scale)
     .inner_size(size.width as f64 / scale, size.height as f64 / scale)
     .visible(false)
-    .initialization_script(&build_init_script())
+    .initialization_script(&build_init_script(&theme.0))
     .on_navigation(|target_url| is_blocked_tracker(target_url.as_str()))
     .build()
     .map_err(|error| error.to_string())?;
@@ -407,8 +414,9 @@ fn close_tab(app: AppHandle, state: State<'_, TabManager>, label: String) -> Res
     emit_tabs(&app, &state)
 }
 
-fn build_init_script() -> String {
-    let escaped_css = serde_json::to_string(INJECTED_CSS)
+fn build_init_script(custom_css: &str) -> String {
+    let injected_css = format!("{INJECTED_CSS}\n{custom_css}");
+    let escaped_css = serde_json::to_string(&injected_css)
         .expect("failed to encode injected CSS as a JavaScript string");
     let app_version = serde_json::to_string(env!("CARGO_PKG_VERSION"))
         .expect("failed to encode app version as a JavaScript string");
@@ -449,9 +457,30 @@ fn is_blocked_tracker(url: &str) -> bool {
 async fn open_external_url(app: tauri::AppHandle, url: String) -> Result<(), String> {
     use tauri_plugin_opener::OpenerExt;
 
+    let url = parse_tab_url(&url)?;
     app.opener()
-        .open_url(url, None::<&str>)
+        .open_url(url.to_string(), None::<&str>)
         .map_err(|error| error.to_string())
+}
+
+#[tauri::command]
+fn get_autostart_enabled(app: AppHandle) -> Result<bool, String> {
+    use tauri_plugin_autostart::ManagerExt;
+
+    app.autolaunch().is_enabled().map_err(|error| error.to_string())
+}
+
+#[tauri::command]
+fn set_autostart_enabled(app: AppHandle, enabled: bool) -> Result<(), String> {
+    use tauri_plugin_autostart::ManagerExt;
+
+    let autolaunch = app.autolaunch();
+    if enabled {
+        autolaunch.enable()
+    } else {
+        autolaunch.disable()
+    }
+    .map_err(|error| error.to_string())
 }
 
 #[tauri::command]
@@ -472,17 +501,55 @@ fn show_message_notification(app: AppHandle, sender: String) -> Result<(), Strin
         .map_err(|error| error.to_string())
 }
 
-pub fn run() {
-    let init_script = build_init_script();
+fn load_custom_theme_css(app: &AppHandle) -> Result<String, String> {
+    const MAX_THEME_SIZE: u64 = 256 * 1024;
+    let explicit_path = std::env::var_os("BIMBAM_THEME_CSS").map(PathBuf::from);
+    let path = match explicit_path.as_ref() {
+        Some(path) => path.clone(),
+        None => app
+            .path()
+            .resource_dir()
+            .map_err(|error| error.to_string())?
+            .join("themes/custom.css"),
+    };
 
+    match fs::metadata(&path) {
+        Ok(metadata) if metadata.len() > MAX_THEME_SIZE => {
+            Err(format!("Tệp theme vượt quá giới hạn 256 KiB: {}", path.display()))
+        }
+        Ok(_) => fs::read_to_string(&path)
+            .map_err(|error| format!("Không thể đọc theme {}: {error}", path.display())),
+        Err(error)
+            if explicit_path.is_none() && error.kind() == std::io::ErrorKind::NotFound =>
+        {
+            Ok(String::new())
+        }
+        Err(error) => Err(format!("Không thể đọc theme {}: {error}", path.display())),
+    }
+}
+
+pub fn run() {
     tauri::Builder::default()
         .manage(TabManager::default())
         .plugin(tauri_plugin_store::Builder::default().build())
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_notification::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
+        .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
+            if let Some(window) = app.get_webview_window("main") {
+                let _ = window.show();
+                let _ = window.set_focus();
+            }
+        }))
+        .plugin(tauri_plugin_autostart::init(
+            tauri_plugin_autostart::MacosLauncher::LaunchAgent,
+            None,
+        ))
+        .plugin(tauri_plugin_window_state::Builder::default().build())
         .invoke_handler(tauri::generate_handler![
             open_external_url,
+            get_autostart_enabled,
+            set_autostart_enabled,
             get_memory_trim_settings,
             set_memory_trim_settings,
             show_message_notification,
@@ -496,6 +563,9 @@ pub fn run() {
                 .map_err(std::io::Error::other)?;
             app.manage(memory_trim);
             start_memory_trim_monitor(app.handle().clone());
+            let custom_css =
+                load_custom_theme_css(app.handle()).map_err(std::io::Error::other)?;
+            app.manage(ThemeStyles(custom_css));
 
             let show_item =
                 MenuItem::with_id(app, "show", "Hiện BimBimBamBam", true, None::<&str>)?;
@@ -538,6 +608,7 @@ pub fn run() {
                 })
                 .build(app)?;
 
+            let init_script = build_init_script(&app.state::<ThemeStyles>().0);
             let url = tauri::WebviewUrl::External(
                 "https://www.facebook.com/messages"
                     .parse()

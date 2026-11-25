@@ -30,6 +30,7 @@
     autoReaction: "👍",
     autoActionDurationMinutes: 1,
     autoActionUntil: 0,
+    autoSaveSettings: true,
   };
 
   window.BimBam = window.BimBam || {};
@@ -46,6 +47,9 @@
   function saveState(nextState) {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(nextState));
+      window.dispatchEvent(new CustomEvent("bimbam:settings-saved", {
+        detail: { savedAt: Date.now() },
+      }));
     } catch {}
   }
 

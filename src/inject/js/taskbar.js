@@ -520,6 +520,9 @@
     const updateButton = createButton("↻", "Kiểm tra cập nhật", () => {
       window.BimBam?.checkForUpdate(true);
     }, "bimbam-toolbar-button");
+    const downloadHistoryButton = createButton("⬇", "Nhật ký tải xuống", () => {
+      window.BimBam?.toggleDownloadHistory?.();
+    }, "bimbam-toolbar-button");
     const soundSelect = document.createElement("select");
     soundSelect.id = "bimbam-sound-select";
     soundSelect.title = "Âm báo khi nhận tin nhắn";
@@ -548,7 +551,7 @@
 
     const actions = document.createElement("div");
     actions.className = "bimbam-toolbar-actions";
-    actions.append(addButton, updateButton, soundSelect, settingsButton);
+    actions.append(addButton, downloadHistoryButton, updateButton, soundSelect, settingsButton);
     content.append(tabs, shortcuts, actions, batteryLabel);
     taskbar.append(islandToggle, content);
     document.body.appendChild(taskbar);

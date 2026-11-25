@@ -1,0 +1,8 @@
+/* Optional example overrides for the hosted chat website. */
+:root {
+  color-scheme: dark;
+}
+
+body {
+  scrollbar-color: #536078 #171b24;
+}
